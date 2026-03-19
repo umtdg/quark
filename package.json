@@ -1,5 +1,5 @@
 {
-  "name": "quick-access",
+  "name": "proton-pass-quick-access",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -10,12 +10,24 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.9",
+    "@mui/material": "^7.3.9",
+    "@mui/x-data-grid": "^8.27.5",
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-clipboard-manager": "~2.3.2",
+    "@tauri-apps/plugin-opener": "^2",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.2.2",
     "@tauri-apps/cli": "^2",
-    "vite": "^6.0.3",
-    "typescript": "~5.6.2"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.2.2",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.3"
   }
 }
