@@ -4,16 +4,6 @@ import { Box, List, ListItemButton, ListItemText, Pagination, TextField } from "
 import { invoke } from "@tauri-apps/api/core";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
 
-interface PageResult<T> {
-    items: T[];
-    total: number;
-}
-
-interface Pagination {
-    page: number;
-    pageSize: number;
-}
-
 interface ItemRef {
     id: string;
     shareId: string;
@@ -21,31 +11,9 @@ interface ItemRef {
     itype: string;
 }
 
-interface ItemLogin {
-    email: string;
-    username: string;
-    password: string;
-    urls: string[];
-    totp_uri: string;
-}
-
-interface ItemContentMap {
-    Login: ItemLogin;
-}
-
-type ItemType = keyof ItemContentMap;
-
-interface ItemContent<T extends ItemType = ItemType> {
-    title: string;
-    note: string;
-    content: { [K in T]: ItemContentMap[K] };
-}
-
-interface Item<T extends ItemType = ItemType> {
-    id: string;
-    shareId: string;
-    vaultId: string;
-    content: ItemContent<T>;
+interface PageResult<T> {
+    items: T[];
+    total: number;
 }
 
 export default function App() {
@@ -53,43 +21,41 @@ export default function App() {
 
     const [query, setQuery] = useState("");
     const [items, setItems] = useState<ItemRef[]>([]);
-    const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
+    const [pageCount, setPageCount] = useState(1);
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [selectedRef, setSelectedRef] = useState<ItemRef | undefined>(undefined)
     const listRef = useRef(null);
 
     useEffect(() => {
-        invoke<PageResult<ItemRef>>("get_item_list", {
+        invoke<PageResult<ItemRef>>("get_items", {
             pagination: {
                 offset: (page - 1) * PAGE_SIZE,
                 limit: PAGE_SIZE,
-            }
+            },
+            query: query.toLowerCase(),
         }).then(({ items, total }) => {
             setItems(items);
-            setTotal(total);
             setSelectedIndex(0);
+            setSelectedRef(items.length > 0 ? items[selectedIndex] : undefined);
+
+            const pageCount = Math.floor(total / PAGE_SIZE);
+            const lastPage = (total % PAGE_SIZE == 0) ? 0 : 1;
+            setPageCount(pageCount + lastPage);
         });
     }, [query, page]);
 
     useEffect(() => { setPage(1); }, [query]);
 
-    async function getItemInfo(itemRef: ItemRef): Promise<Item | undefined> {
-        return await invoke<Item | undefined>("get_item_info", { itemRef });
-    }
-
-    function getItemContent(item: Item, itype: string): ItemContentMap[ItemType] | undefined {
-        const type = itype as ItemType;
-
-        switch (type) {
-            case "Login":
-                return item.content.content[type] as ItemLogin;
-            default:
-                return undefined;
+    useEffect(() => {
+        if (items.length === 0 || selectedIndex < 0 || selectedIndex >= items.length) {
+            setSelectedRef(undefined);
+        } else {
+            setSelectedRef(items[selectedIndex]);
         }
-    }
+    }, [selectedIndex]);
 
     function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
-        const itemRef = items[selectedIndex];
         switch (e.key) {
             case "ArrowDown":
                 e.preventDefault();
@@ -100,34 +66,37 @@ export default function App() {
                 setSelectedIndex(i => Math.max(i - 1, 0));
                 break;
             case "c":
-                if (!itemRef) {
+                if (!e.ctrlKey) {
                     break;
                 }
 
-                if (e.ctrlKey) {
-                    console.log("Ctrl + C");
-                    getItemInfo(itemRef).then((item) => {
-                        if (!item) return;
-
-                        const content = getItemContent(item, itemRef.itype) as ItemLogin;
-                        writeText(content.username.length > 0 ? content.username : content.email);
-                    })
+                if (!selectedRef) {
+                    break;
                 }
+
+                const fn = e.altKey ? "copy_alt" : "copy_primary"
+                invoke<string | undefined>(fn, { itemRef: selectedRef })
+                    .then((secret) => {
+                        if (secret) {
+                            writeText(secret);
+                        }
+                    });
                 break;
             case "C":
-                if (!itemRef) {
+                if (!e.ctrlKey) {
                     break;
                 }
 
-                if (e.ctrlKey) {
-                    console.log("Ctrl + Shift + C");
-                    getItemInfo(itemRef).then((item) => {
-                        if (!item) return;
-
-                        const content = getItemContent(item, itemRef.itype) as ItemLogin;
-                        writeText(content.password);
-                    });
+                if (!selectedRef) {
+                    break;
                 }
+
+                invoke<string | undefined>("copy_secondary", { itemRef: selectedRef })
+                    .then((secret) => {
+                        if (secret) {
+                            writeText(secret);
+                        }
+                    })
                 break;
             // add other shortcuts here
         }
@@ -158,7 +127,7 @@ export default function App() {
             </List>
 
             <Pagination
-                count={Math.ceil(total / PAGE_SIZE)}
+                count={pageCount}
                 page={page}
                 onChange={(_, val) => setPage(val)}
             />
