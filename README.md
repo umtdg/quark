@@ -1,7 +1,12 @@
-# Tauri + Vanilla TS
+# Proton Pass Quick Access
 
-This template should help get you started developing with Tauri in vanilla HTML, CSS and Typescript.
+Quick access application for Proton Pass, similar to 1Password Quick Access, using `pass-cli`.
 
-## Recommended IDE Setup
+## TODO
 
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+- [ ] Better error handling everywhere (backend + frontend)
+- [ ] Better logging everywhere (backend + frontend)
+- [ ] Check if pass-cli is available at startup
+- [ ] Check if pass-cli is logged at startup
+- [ ] Store items encrypted
+- [ ] Close the app after triggering an action
