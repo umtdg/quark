@@ -1,17 +1,19 @@
+mod config;
+mod date;
 mod item;
+mod store;
 mod vault;
 
+use anyhow::Result;
+use anyhow_tauri::TAResult;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 use std::sync::Mutex;
 
-use item::{items_from_pass_cli, Item, ItemData, ItemRef};
-use tauri::{Builder, State};
-use vault::Vault;
+use item::ItemRef;
+use store::AppState;
+use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
-struct AppState {
-    items: HashSet<Item>,
-}
+use crate::{config::DEFAULT_STORE_PATH, item::Item};
 
 #[derive(Deserialize)]
 struct PaginationInput {
@@ -26,38 +28,78 @@ struct PageResult<T> {
 }
 
 #[tauri::command]
+async fn refresh_items(app: AppHandle, state: State<'_, Mutex<AppState>>) -> TAResult<()> {
+    log::debug!("Refreshing items from pass-cli");
+    app.emit::<Option<usize>>("refresh-started", None).unwrap();
+
+    let capacity: Option<usize> = {
+        match state.lock() {
+            Ok(state) => Some(state.items.capacity()),
+            Err(_) => None,
+        }
+    };
+
+    let items = match AppState::items_from_cli(app.clone(), capacity).await {
+        Ok(items) => items,
+        Err(err) => {
+            app.emit("refresh-failed", format!("{:?}", err)).unwrap();
+            return Err(err.into());
+        }
+    };
+
+    let mut state = state.lock().unwrap();
+
+    state.items.extend(items);
+
+    let store_file_path = app
+        .path()
+        .app_config_dir()
+        .unwrap()
+        .join(DEFAULT_STORE_PATH);
+
+    log::debug!("Saving state to {:?}", store_file_path);
+    match state.to_file(store_file_path) {
+        Ok(_) => {}
+        Err(err) => {
+            app.emit("refresh-failed", format!("{:?}", err)).unwrap();
+            return Err(err.into());
+        }
+    }
+
+    app.emit::<Option<usize>>("refresh-completed", None)
+        .unwrap();
+
+    Ok(())
+}
+
+#[tauri::command]
 fn get_items(
     state: State<'_, Mutex<AppState>>,
     pagination: PaginationInput,
     query: String,
 ) -> PageResult<ItemRef> {
+    log::debug!("Getting a list of items matching '{}'", &query);
+
     let state = state.lock().unwrap();
 
-    let total = state.items.len();
-    let offset = pagination.offset.unwrap_or(0).clamp(0, total);
-    let limit = pagination.limit.unwrap_or(10).clamp(10, 50);
-
-    let items: Vec<ItemRef> = state
+    let items: Vec<&Item> = state
         .items
         .iter()
         .filter(|item| item.content.title.to_lowercase().contains(&query))
-        .skip(offset)
-        .take(limit)
-        .map(|item| ItemRef {
-            id: item.id.clone(),
-            share_id: item.share_id.clone(),
-            title: item.content.title.clone(),
-            itype: match item.content.content {
-                ItemData::Login(_) => "Login".into(),
-                ItemData::CreditCard(_) => "CreditCard".into(),
-            },
-        })
         .collect();
 
-    PageResult {
-        total: items.len(),
-        items,
-    }
+    let total = items.len();
+    let offset = pagination.offset.unwrap_or(0).clamp(0, total);
+    let limit = pagination.limit.unwrap_or(10).clamp(10, 50);
+
+    let items = items
+        .iter()
+        .skip(offset)
+        .take(limit)
+        .map(|&item| item.into())
+        .collect();
+
+    PageResult { total, items }
 }
 
 #[tauri::command]
@@ -109,29 +151,44 @@ fn copy_alt(state: State<'_, Mutex<AppState>>, item_ref: ItemRef) -> Option<Stri
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    let vaults = Vault::from_pass_cli().expect("failed to get list of vaults");
-    let mut items = HashSet::with_capacity(64);
-    for vault in &vaults {
-        let share_id = &vault.share_id;
-        let vault_items = items_from_pass_cli(share_id)
-            .expect(&format!("failed to get items from vault {}", vault.name));
-
-        items.extend(vault_items);
-    }
-
-    let state = AppState { items };
-
-    Builder::default()
+pub fn run() -> Result<()> {
+    let mut builder = Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .manage(Mutex::new(state))
-        .invoke_handler(tauri::generate_handler![
-            get_items,
-            copy_primary,
-            copy_secondary,
-            copy_alt
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .plugin(tauri_plugin_shell::init());
+
+    let tauri_log = tauri_plugin_log::Builder::new()
+        .targets([tauri_plugin_log::Target::new(
+            tauri_plugin_log::TargetKind::LogDir {
+                file_name: Some("logs".into()),
+            },
+        )])
+        .max_file_size(50 * 1024)
+        .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(2))
+        .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
+        .level(log::LevelFilter::Debug)
+        .build();
+    builder = builder.plugin(tauri_log);
+
+    builder = builder.invoke_handler(tauri::generate_handler![
+        refresh_items,
+        get_items,
+        copy_primary,
+        copy_secondary,
+        copy_alt
+    ]);
+
+    let app = builder.build(tauri::generate_context!())?;
+
+    let state = AppState::from_file(
+        app.app_handle()
+            .path()
+            .app_config_dir()?
+            .join(DEFAULT_STORE_PATH),
+    )?;
+    app.manage(Mutex::new(state));
+
+    app.run(|_, _| {});
+
+    Ok(())
 }

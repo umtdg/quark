@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "proton-pass-quick-access",
+  "productName": "Proton Pass Quick Access",
   "version": "0.1.0",
-  "identifier": "com.umtdg.proton-pass-quick-access",
+  "identifier": "proton-pass-quick-access",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,8 +13,8 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "proton-pass-quick-access",
-        "width": 800,
+        "title": "Proton Pass Quick Access",
+        "width": 500,
         "height": 600
       }
     ],

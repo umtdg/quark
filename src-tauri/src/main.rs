@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    proton_pass_quick_access_lib::run()
+    proton_pass_quick_access_lib::run().expect("error when running app");
 }

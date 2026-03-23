@@ -1,8 +1,23 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Box, List, ListItemButton, ListItemText, Pagination, TextField } from "@mui/material";
+import {
+    Box,
+    IconButton,
+    List,
+    ListItemButton,
+    ListItemText,
+    Pagination,
+    Stack,
+    TextField,
+    Typography,
+} from "@mui/material";
+import {
+    RefreshRounded as RefreshIcon,
+} from "@mui/icons-material";
 
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { writeText } from "@tauri-apps/plugin-clipboard-manager";
+import { SxProps, Theme } from "@mui/material/styles";
 
 interface ItemRef {
     id: string;
@@ -25,6 +40,8 @@ export default function App() {
     const [pageCount, setPageCount] = useState(1);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [selectedRef, setSelectedRef] = useState<ItemRef | undefined>(undefined)
+    const [refreshing, setRefreshing] = useState(false);
+    const [refreshStatus, setRefreshStatus] = useState("");
     const listRef = useRef(null);
 
     useEffect(() => {
@@ -102,15 +119,61 @@ export default function App() {
         }
     };
 
+    function refreshItems() {
+        invoke("refresh_items");
+    }
+
+    listen<number | undefined>("refresh-started", (_) => {
+        setRefreshing(true);
+        setRefreshStatus("");
+    });
+
+    listen<string>("refresh-failed", (event) => {
+        setRefreshing(false);
+        setRefreshStatus(event.payload);
+    });
+
+    listen<number | undefined>("refresh-completed", (_) => {
+        setRefreshing(false);
+        setRefreshStatus("");
+
+        // this is to trigger fetching items from the backend
+        setQuery(query);
+    });
+
+    let refreshIconSx: SxProps<Theme> | undefined = undefined;
+    if (refreshing) {
+        refreshIconSx = {
+            animation: "spin 2s linear infinite",
+            "@keyframes spin": {
+                "0%": {
+                    transform: "rotate(-360deg)",
+                },
+                "100%": {
+                    transform: "rotate(0deg)",
+                },
+            },
+        }
+    }
+
     return (
         <Box onKeyDown={handleKeyDown} tabIndex={-1} sx={{ outline: "none" }}>
-            <TextField
-                autoFocus
-                fullWidth
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                placeholder="Search"
-            />
+            <Stack direction="row">
+                <TextField
+                    autoFocus
+                    fullWidth
+                    value={query}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder="Search"
+                />
+                <IconButton disabled={refreshing}>
+                    <RefreshIcon onClick={refreshing ? undefined : refreshItems} sx={refreshIconSx} />
+                </IconButton>
+            </Stack>
+
+            {refreshStatus.length > 0 && (
+                <Typography>{refreshStatus}</Typography>
+            )}
 
             <List ref={listRef}>
                 {items.map((item, index) => {
@@ -126,11 +189,14 @@ export default function App() {
                 })}
             </List>
 
-            <Pagination
-                count={pageCount}
-                page={page}
-                onChange={(_, val) => setPage(val)}
-            />
-        </Box>
+            {pageCount > 0 &&
+                <Pagination
+                    count={pageCount}
+                    page={page}
+                    onChange={(_, val) => setPage(val)}
+                />
+            }
+
+        </Box >
     );
 }
