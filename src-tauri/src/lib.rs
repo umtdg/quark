@@ -13,7 +13,7 @@ use item::ItemRef;
 use store::AppState;
 use tauri::{AppHandle, Builder, Emitter, Manager, State};
 
-use crate::{config::DEFAULT_STORE_PATH, item::Item};
+use crate::{config::AppConfig, item::Item};
 
 #[derive(Deserialize)]
 struct PaginationInput {
@@ -28,9 +28,15 @@ struct PageResult<T> {
 }
 
 #[tauri::command]
-async fn refresh_items(app: AppHandle, state: State<'_, Mutex<AppState>>) -> TAResult<()> {
+async fn refresh_items(
+    app_handle: AppHandle,
+    state: State<'_, Mutex<AppState>>,
+    app_config: State<'_, AppConfig>,
+) -> TAResult<()> {
     log::debug!("Refreshing items from pass-cli");
-    app.emit::<Option<usize>>("refresh-started", None).unwrap();
+    app_handle
+        .emit::<Option<usize>>("refresh-started", None)
+        .unwrap();
 
     let capacity: Option<usize> = {
         match state.lock() {
@@ -39,10 +45,12 @@ async fn refresh_items(app: AppHandle, state: State<'_, Mutex<AppState>>) -> TAR
         }
     };
 
-    let items = match AppState::items_from_cli(app.clone(), capacity).await {
+    let items = match AppState::items_from_cli(&app_handle, &app_config, capacity).await {
         Ok(items) => items,
         Err(err) => {
-            app.emit("refresh-failed", format!("{:?}", err)).unwrap();
+            app_handle
+                .emit("refresh-failed", format!("{:?}", err))
+                .unwrap();
             return Err(err.into());
         }
     };
@@ -51,22 +59,21 @@ async fn refresh_items(app: AppHandle, state: State<'_, Mutex<AppState>>) -> TAR
 
     state.items.extend(items);
 
-    let store_file_path = app
-        .path()
-        .app_config_dir()
-        .unwrap()
-        .join(DEFAULT_STORE_PATH);
+    let store_file_path = app_config.get_store_file();
 
     log::debug!("Saving state to {:?}", store_file_path);
     match state.to_file(store_file_path) {
         Ok(_) => {}
         Err(err) => {
-            app.emit("refresh-failed", format!("{:?}", err)).unwrap();
+            app_handle
+                .emit("refresh-failed", format!("{:?}", err))
+                .unwrap();
             return Err(err.into());
         }
     }
 
-    app.emit::<Option<usize>>("refresh-completed", None)
+    app_handle
+        .emit::<Option<usize>>("refresh-completed", None)
         .unwrap();
 
     Ok(())
@@ -179,14 +186,15 @@ pub fn run() -> Result<()> {
     ]);
 
     let app = builder.build(tauri::generate_context!())?;
+    let app_handle = app.handle();
 
-    let state = AppState::from_file(
-        app.app_handle()
-            .path()
-            .app_config_dir()?
-            .join(DEFAULT_STORE_PATH),
-    )?;
-    app.manage(Mutex::new(state));
+    let app_config = AppConfig::load(&app_handle)?;
+    let app_state = AppState::from_file(app_config.get_store_file())?;
+
+    log::debug!("Application config: {:?}", app_config);
+
+    app.manage(app_config);
+    app.manage(Mutex::new(app_state));
 
     app.run(|_, _| {});
 

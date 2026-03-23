@@ -44,34 +44,6 @@ export default function App() {
     const [refreshStatus, setRefreshStatus] = useState("");
     const listRef = useRef(null);
 
-    useEffect(() => {
-        invoke<PageResult<ItemRef>>("get_items", {
-            pagination: {
-                offset: (page - 1) * PAGE_SIZE,
-                limit: PAGE_SIZE,
-            },
-            query: query.toLowerCase(),
-        }).then(({ items, total }) => {
-            setItems(items);
-            setSelectedIndex(0);
-            setSelectedRef(items.length > 0 ? items[selectedIndex] : undefined);
-
-            const pageCount = Math.floor(total / PAGE_SIZE);
-            const lastPage = (total % PAGE_SIZE == 0) ? 0 : 1;
-            setPageCount(pageCount + lastPage);
-        });
-    }, [query, page]);
-
-    useEffect(() => { setPage(1); }, [query]);
-
-    useEffect(() => {
-        if (items.length === 0 || selectedIndex < 0 || selectedIndex >= items.length) {
-            setSelectedRef(undefined);
-        } else {
-            setSelectedRef(items[selectedIndex]);
-        }
-    }, [selectedIndex]);
-
     function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
         switch (e.key) {
             case "ArrowDown":
@@ -123,6 +95,37 @@ export default function App() {
         invoke("refresh_items");
     }
 
+    function fetchItems() {
+        invoke<PageResult<ItemRef>>("get_items", {
+            pagination: {
+                offset: (page - 1) * PAGE_SIZE,
+                limit: PAGE_SIZE,
+            },
+            query: query.toLowerCase(),
+        }).then(({ items, total }) => {
+            setItems(items);
+            setSelectedIndex(0);
+            setSelectedRef(items.length > 0 ? items[selectedIndex] : undefined);
+
+            const pageCount = Math.floor(total / PAGE_SIZE);
+            const lastPage = (total % PAGE_SIZE == 0) ? 0 : 1;
+            setPageCount(pageCount + lastPage);
+        });
+    }
+
+    useEffect(fetchItems, [query, page]);
+
+    useEffect(() => { setPage(1); }, [query]);
+
+    useEffect(() => {
+        if (items.length === 0 || selectedIndex < 0 || selectedIndex >= items.length) {
+            setSelectedRef(undefined);
+        } else {
+            setSelectedRef(items[selectedIndex]);
+        }
+    }, [selectedIndex]);
+
+
     listen<number | undefined>("refresh-started", (_) => {
         setRefreshing(true);
         setRefreshStatus("");
@@ -137,8 +140,7 @@ export default function App() {
         setRefreshing(false);
         setRefreshStatus("");
 
-        // this is to trigger fetching items from the backend
-        setQuery(query);
+        fetchItems()
     });
 
     let refreshIconSx: SxProps<Theme> | undefined = undefined;

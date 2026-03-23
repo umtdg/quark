@@ -6,7 +6,8 @@ use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tauri_plugin_shell::ShellExt;
 
-use crate::{config::DEFAULT_PASS_CLI_PATH, date};
+use crate::config::AppConfig;
+use crate::date;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemLogin {
@@ -144,12 +145,14 @@ pub struct ItemsOutput {
     pub items: HashSet<Item>,
 }
 
-pub async fn items_from_pass_cli(app_handle: AppHandle, share_id: &str) -> Result<HashSet<Item>> {
+pub async fn items_from_pass_cli(
+    app_handle: &AppHandle,
+    app_config: &AppConfig,
+    share_id: &str,
+) -> Result<HashSet<Item>> {
     log::debug!("Getting items from pass-cli for share {}", share_id);
 
-    let pass_cli_path = DEFAULT_PASS_CLI_PATH;
-
-    log::debug!("pass-cli: {:?}", pass_cli_path);
+    let pass_cli_path = app_config.get_pass_cli_path();
 
     let shell = app_handle.shell();
     let output = shell

@@ -7,6 +7,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 
+use crate::config::AppConfig;
 use crate::item::{items_from_pass_cli, Item};
 use crate::vault::vaults_from_pass_cli;
 
@@ -63,10 +64,11 @@ impl AppState {
     }
 
     pub async fn items_from_cli(
-        app_handle: AppHandle,
+        app_handle: &AppHandle,
+        app_config: &AppConfig,
         capacity: Option<usize>,
     ) -> Result<HashSet<Item>> {
-        let vaults = vaults_from_pass_cli(app_handle.clone())
+        let vaults = vaults_from_pass_cli(app_handle, &app_config)
             .await
             .context("Failed to get list of vaults from Pass CLI")?;
 
@@ -75,7 +77,7 @@ impl AppState {
         log::debug!("Reading items from pass-cli");
         for vault in vaults {
             let share_id = vault.share_id;
-            let vault_items = items_from_pass_cli(app_handle.clone(), &share_id)
+            let vault_items = items_from_pass_cli(app_handle, app_config, &share_id)
                 .await
                 .context(format!("Failed to get items from vault {}", vault.name))?;
 

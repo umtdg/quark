@@ -5,7 +5,7 @@ use serde::Deserialize;
 use tauri::AppHandle;
 use tauri_plugin_shell::ShellExt;
 
-use crate::config::DEFAULT_PASS_CLI_PATH;
+use crate::config::AppConfig;
 
 #[derive(Debug, Deserialize)]
 pub struct Vault {
@@ -34,12 +34,13 @@ pub struct VaultListOutput {
     vaults: HashSet<Vault>,
 }
 
-pub async fn vaults_from_pass_cli(app_handle: AppHandle) -> Result<HashSet<Vault>> {
+pub async fn vaults_from_pass_cli(
+    app_handle: &AppHandle,
+    app_config: &AppConfig,
+) -> Result<HashSet<Vault>> {
     log::debug!("Getting vaults from pass-cli");
 
-    let pass_cli_path = DEFAULT_PASS_CLI_PATH;
-
-    log::debug!("pass-cli: {:?}", pass_cli_path);
+    let pass_cli_path = app_config.get_pass_cli_path();
 
     let shell = app_handle.shell();
     let output = shell
