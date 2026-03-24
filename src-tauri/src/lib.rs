@@ -4,18 +4,27 @@ mod crypto;
 mod date;
 mod item;
 mod state;
+mod tray;
 mod vault;
 
 use std::sync::{Arc, Mutex};
 
 use anyhow::Result;
-use tauri::menu::{Menu, MenuItem};
-use tauri::tray::TrayIconBuilder;
-use tauri::{Builder, Manager};
+use tauri::{Builder, Manager, Runtime, Window, WindowEvent};
 
 use crate::config::AppConfig;
 use crate::crypto::Dek;
 use crate::state::AppState;
+use crate::tray::create_icon;
+
+fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
+    if let WindowEvent::CloseRequested { api, .. } = event {
+        log::debug!("Closing to system tray");
+
+        window.hide().unwrap();
+        api.prevent_close();
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
@@ -36,35 +45,13 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
-        .on_window_event(|window, event| {
-            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                log::debug!("Closing to system tray");
-
-                window.hide().unwrap();
-                api.prevent_close();
-            }
-        })
+        .on_window_event(on_window_event)
         .invoke_handler(tauri::generate_handler![]);
 
     let app = builder.build(tauri::generate_context!())?;
     let app_handle = app.handle();
 
-    let quit_tray_item = MenuItem::with_id(app_handle, "quit", "Quit", true, None::<&str>)?;
-    let tray_menu = Menu::with_items(app_handle, &[&quit_tray_item])?;
-    let _ = TrayIconBuilder::new()
-        .icon(app.default_window_icon().unwrap().clone())
-        .menu(&tray_menu)
-        .show_menu_on_left_click(true)
-        .on_menu_event(|app, event| match event.id.as_ref() {
-            "quit" => {
-                log::info!("Quitting through tray");
-                app.exit(0);
-            }
-            _ => {
-                log::debug!("Tray menu item {:?} is not handled", event.id);
-            }
-        })
-        .build(app_handle)?;
+    let _ = create_icon(app_handle)?;
 
     let app_config = AppConfig::load(app_handle)?;
     log::debug!("Application config: {:?}", app_config);
