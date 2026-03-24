@@ -6,10 +6,13 @@ use tauri::{AppHandle, Manager};
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
     pass_cli_path: String,
-    store_file: String,
+    state_file: String,
 }
 
 impl AppConfig {
+    pub const DEFAULT_PASS_CLI_PATH: &str = "pass-cli";
+    pub const DEFAULT_STATE_FILE: &str = "state.json";
+
     pub fn load(app_handle: &AppHandle) -> Result<Self> {
         let config_dir = match app_handle.path().app_config_dir() {
             Ok(config_dir) => config_dir,
@@ -22,10 +25,14 @@ impl AppConfig {
 
         let builder = Config::builder()
             .add_source(config_file)
-            .set_default("pass_cli_path", "pass-cli")?
+            .set_default("pass_cli_path", Self::DEFAULT_PASS_CLI_PATH)?
             .set_default(
-                "store_file",
-                config_dir.join("items.json").to_str().unwrap().to_string(),
+                "state_file",
+                config_dir
+                    .join(Self::DEFAULT_STATE_FILE)
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
             )?;
 
         let app_config: Self = builder.build()?.try_deserialize()?;
@@ -37,7 +44,7 @@ impl AppConfig {
         &self.pass_cli_path
     }
 
-    pub fn get_store_file(&self) -> &str {
-        &self.store_file
+    pub fn get_state_file(&self) -> &str {
+        &self.state_file
     }
 }

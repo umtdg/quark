@@ -103,7 +103,7 @@ impl Hash for Item {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemRef {
     pub id: String,
     pub share_id: String,

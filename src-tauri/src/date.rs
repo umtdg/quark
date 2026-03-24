@@ -1,7 +1,7 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Deserializer, Serializer};
 
-const FORMAT: &'static str = "%Y-%m-%dT%H:%M:%S";
+const FORMAT: &str = "%Y-%m-%dT%H:%M:%S";
 
 pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
 where
