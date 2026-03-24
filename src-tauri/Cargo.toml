@@ -2,7 +2,7 @@
 name = "proton-pass-quick-access"
 version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
+authors = ["me@umtdg.com <Umut Dag>"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -19,7 +19,6 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-opener = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-shell = "2.3.5"
 tauri-plugin-log = "2"
@@ -39,4 +38,7 @@ rand = "0.10.0"
 
 [dev-dependencies]
 clippy = "0.0.302"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
 

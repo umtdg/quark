@@ -7,9 +7,9 @@
   ],
   "permissions": [
     "core:default",
-    "opener:default",
     "clipboard-manager:default",
     "clipboard-manager:allow-write-text",
+    "log:default",
     {
       "identifier": "shell:allow-execute",
       "allow": [
@@ -25,7 +25,6 @@
           "sidecar": false
         }
       ]
-    },
-    "log:default"
+    }
   ]
 }
