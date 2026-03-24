@@ -39,7 +39,7 @@ pub fn run() -> Result<()> {
     let tauri_log = tauri_plugin_log::Builder::new()
         .targets([tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::LogDir {
-                file_name: Some("logs".into()),
+                file_name: None,
             },
         )])
         .max_file_size(50 * 1024)
@@ -61,14 +61,16 @@ pub fn run() -> Result<()> {
 
     let _ = create_icon(app_handle)?;
 
+    log::debug!("Read config");
     let app_config = AppConfig::load(app_handle)?;
     log::debug!("Application config: {:?}", app_config);
 
+    log::debug!("Load or create application state");
     let app_state = AppState::load_or_new(app_config.get_state_file())?;
     let dek: Option<Dek> = None;
 
     app.manage(app_config);
-    app.manage(Mutex::new(app_state));
+    app.manage(Arc::new(Mutex::new(app_state)));
     app.manage(Arc::new(Mutex::new(dek)));
 
     app.run(|_, _| {});
