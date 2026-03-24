@@ -18,11 +18,19 @@ use crate::state::AppState;
 use crate::tray::create_icon;
 
 fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
-    if let WindowEvent::CloseRequested { api, .. } = event {
-        log::debug!("Closing to system tray");
+    match event {
+        WindowEvent::CloseRequested { api, .. } => {
+            log::debug!("Closing to system tray");
 
-        window.hide().unwrap();
-        api.prevent_close();
+            window.hide().unwrap();
+            api.prevent_close();
+        }
+        WindowEvent::Focused(false) => {
+            log::debug!("Window lost focus, hiding to system tray");
+
+            window.hide().unwrap();
+        }
+        _ => (),
     }
 }
 
