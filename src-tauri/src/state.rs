@@ -1,13 +1,13 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroize;
 
 use crate::base64_serde;
 use crate::crypto::{generate_salt, Dek, EncryptedData, KdfParams, Kek};
+use crate::error::Result;
 use crate::item::ItemRef;
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -19,7 +19,7 @@ pub struct AppState {
     pub salt: [u8; 16],
 
     pub wrapped_dek: EncryptedData,
-    pub items: HashSet<ItemRef>,
+    pub items: HashMap<String, ItemRef>,
 }
 
 impl AppState {
@@ -28,10 +28,7 @@ impl AppState {
 
         // Derive KEK from password + salt
         let kdf_params = KdfParams::new();
-        let mut kek = match Kek::new(password, salt, kdf_params.clone()) {
-            Ok(kek) => kek,
-            Err(err) => anyhow::bail!(format!("Error when creatign key-encryption-key: {:?}", err)),
-        };
+        let mut kek = Kek::new(password, salt, kdf_params.clone())?;
 
         // Generate and encrypt DEK
         let dek = Dek::new();
@@ -45,7 +42,7 @@ impl AppState {
             kdf_params,
             salt,
             wrapped_dek,
-            items: HashSet::new(),
+            items: HashMap::new(),
         })
     }
 

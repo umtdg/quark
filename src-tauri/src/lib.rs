@@ -2,6 +2,7 @@ mod base64_serde;
 mod config;
 mod crypto;
 mod date;
+mod error;
 mod item;
 mod state;
 mod tray;
@@ -9,13 +10,65 @@ mod vault;
 
 use std::sync::{Arc, Mutex};
 
-use anyhow::Result;
-use tauri::{Builder, Manager, Runtime, Window, WindowEvent};
+use tauri::{AppHandle, Builder, Emitter, Manager, Runtime, State, Window, WindowEvent};
 
 use crate::config::AppConfig;
 use crate::crypto::Dek;
+use crate::error::{Error, Result};
+use crate::item::items_from_pass_cli;
 use crate::state::AppState;
 use crate::tray::create_icon;
+use crate::vault::vaults_from_pass_cli;
+
+#[tauri::command]
+async fn refresh_items(
+    app: AppHandle,
+    state: State<'_, Arc<Mutex<AppState>>>,
+    dek: State<'_, Arc<Mutex<Option<Dek>>>>,
+    config: State<'_, AppConfig>,
+) -> Result<()> {
+    app.emit("refresh-started", None::<&str>)?;
+
+    {
+        let dek = dek
+            .try_lock()
+            .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
+
+        if dek.is_none() {
+            return Err(Error::Locked);
+        }
+    }
+
+    let vaults = vaults_from_pass_cli(&app, &config).await?;
+    for vault in vaults {
+        let vault_items = items_from_pass_cli(&app, &config, &vault.share_id).await?;
+
+        log::debug!("Adding vault items to stored items");
+        {
+            let mut state = state
+                .try_lock()
+                .map_err(|_| Error::TryLock("application state".into()))?;
+
+            for item in &vault_items {
+                state
+                    .items
+                    .insert(format!("{}/{}", item.share_id, item.id), item.into());
+            }
+        }
+    }
+
+    {
+        let state = state
+            .try_lock()
+            .map_err(|_| Error::TryLock("application state".into()))?;
+
+        state.save(config.get_state_file())?;
+    }
+
+    app.emit("refresh-completed", None::<&str>)?;
+
+    Ok(())
+}
 
 fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
     match event {
@@ -38,9 +91,7 @@ fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
 pub fn run() -> Result<()> {
     let tauri_log = tauri_plugin_log::Builder::new()
         .targets([tauri_plugin_log::Target::new(
-            tauri_plugin_log::TargetKind::LogDir {
-                file_name: None,
-            },
+            tauri_plugin_log::TargetKind::LogDir { file_name: None },
         )])
         .max_file_size(50 * 1024)
         .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(2))
@@ -54,7 +105,7 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .on_window_event(on_window_event)
-        .invoke_handler(tauri::generate_handler![]);
+        .invoke_handler(tauri::generate_handler![refresh_items]);
 
     let app = builder.build(tauri::generate_context!())?;
     let app_handle = app.handle();

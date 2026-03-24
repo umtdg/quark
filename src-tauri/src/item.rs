@@ -1,6 +1,5 @@
 use std::{collections::HashSet, hash::Hash};
 
-use anyhow::{Context, Result};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
@@ -8,6 +7,7 @@ use tauri_plugin_shell::ShellExt;
 
 use crate::config::AppConfig;
 use crate::date;
+use crate::error::Result;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemLogin {
@@ -171,8 +171,7 @@ pub async fn items_from_pass_cli(
         .await?;
 
     log::trace!("Decoding pass-cli stdout");
-    let stdout = String::from_utf8(output.stdout)
-        .context("Vault list output contains non unicode characters")?;
+    let stdout = String::from_utf8(output.stdout)?;
 
     log::trace!("Parsing pass-cli output as JSON");
     let json: ItemsOutput = serde_json::from_str(&stdout)?;

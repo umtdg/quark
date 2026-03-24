@@ -1,7 +1,8 @@
-use anyhow::Result;
 use config::{Config, File, FileFormat};
 use serde::Deserialize;
 use tauri::{AppHandle, Manager};
+
+use crate::error::{Error, Result};
 
 #[derive(Debug, Deserialize)]
 pub struct AppConfig {
@@ -14,10 +15,10 @@ impl AppConfig {
     pub const DEFAULT_STATE_FILE: &str = "state.json";
 
     pub fn load(app_handle: &AppHandle) -> Result<Self> {
-        let config_dir = match app_handle.path().app_config_dir() {
-            Ok(config_dir) => config_dir,
-            Err(_) => anyhow::bail!("Cannot get config path. This platform may not be supported"),
-        };
+        let config_dir = app_handle
+            .path()
+            .app_config_dir()
+            .map_err(|_| Error::PlatformNotSupported)?;
 
         let config_file = File::from(config_dir.join("config.toml"))
             .format(FileFormat::Toml)

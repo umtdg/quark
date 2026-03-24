@@ -92,7 +92,11 @@ export default function App() {
     };
 
     function refreshItems() {
-        invoke("refresh_items");
+        invoke("refresh_items")
+            .catch((reason) => {
+                console.error("failed to refresh items:", reason);
+                setRefreshing(false);
+            });
     }
 
     function fetchItems() {

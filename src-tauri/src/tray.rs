@@ -1,16 +1,18 @@
-use anyhow::Result;
 use tauri::menu::{Menu, MenuEvent, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Runtime};
+
+use crate::error::Result;
 
 pub fn create_icon<M: Manager<R>, R: Runtime>(manager: &M) -> Result<TrayIcon<R>> {
     let menu = create_menu(manager)?;
 
     let tray = TrayIconBuilder::<R>::new()
         .menu(&menu)
+        .show_menu_on_left_click(false)
+        .icon(manager.app_handle().default_window_icon().unwrap().clone())
         .on_menu_event(on_menu_event)
         .on_tray_icon_event(on_tray_icon_event)
-        .show_menu_on_left_click(false)
         .build(manager)?;
 
     Ok(tray)

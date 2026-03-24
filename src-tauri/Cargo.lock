@@ -3470,6 +3470,7 @@ dependencies = [
  "tauri-plugin-log",
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
+ "thiserror 2.0.18",
  "zeroize",
 ]
 
