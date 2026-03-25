@@ -7,14 +7,14 @@ use serde::{Deserialize, Serialize};
 use tauri::{Manager, Runtime};
 
 use crate::config::AppConfig;
-use crate::crypto::{Dek, EncryptionState};
+use crate::crypto::{Dek, EncryptedData, EncryptionState};
 use crate::error::{Error, Result};
 use crate::item::{Item, ItemRef};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppState {
     pub encryption_state: Arc<EncryptionState>,
-    pub items: Arc<RwLock<HashMap<String, ItemRef>>>,
+    pub items: Arc<RwLock<HashMap<String, EncryptedData>>>,
 
     #[serde(skip_deserializing, skip_serializing)]
     pub dek: Arc<RwLock<Option<Dek>>>,
@@ -31,11 +31,14 @@ impl AppState {
         encryption_state: EncryptionState,
         dek: Option<Dek>,
     ) -> Result<Self> {
+        log::info!("Loading application configuration");
+        let config = AppConfig::load(manager)?;
+
         Ok(Self {
             encryption_state: Arc::new(encryption_state),
             items: Arc::new(RwLock::new(HashMap::with_capacity(128))),
             dek: Arc::new(RwLock::new(dek)),
-            config: Arc::new(AppConfig::load(manager)?),
+            config: Arc::new(config),
         })
     }
 
@@ -60,10 +63,12 @@ impl AppState {
 
         if !path.exists() {
             if let Some(parent) = path.parent() {
+                log::debug!("Creating application local data directory");
                 fs::create_dir_all(parent)?;
             }
         }
 
+        log::debug!("Serializing application state to JSON");
         let state_json = serde_json::to_string_pretty(self)?;
         fs::write(path, state_json)?;
 
@@ -94,11 +99,57 @@ impl AppState {
             .write()
             .map_err(|_| Error::TryLock("items".into()))?;
 
+        let dek = self
+            .dek
+            .read()
+            .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
+
+        if dek.is_none() {
+            return Err(Error::Locked);
+        }
+
+        let key = &dek.as_ref().unwrap().0;
+
+        log::debug!("Encrypting items and adding to state");
         for item in new_items {
-            items.insert(item.composite_key(), item.into());
+            let item_bytes = item.to_bytes()?;
+
+            items.insert(
+                item.composite_key(),
+                EncryptedData::encrypt(item_bytes.as_slice(), key)?,
+            );
         }
 
         Ok(())
+    }
+
+    pub fn get_decrypted_item_refs(&self) -> Result<HashSet<ItemRef>> {
+        log::trace!("Try locking items for read");
+        let items = self
+            .items
+            .read()
+            .map_err(|_| Error::TryLock("items".into()))?;
+
+        log::trace!("Try locking DEK for read");
+        let dek = self
+            .dek
+            .read()
+            .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
+
+        if dek.is_none() {
+            log::trace!("DEK is None, application is locked");
+            return Err(Error::Locked);
+        }
+
+        log::trace!("Decrypting items and mapping them to refs");
+        let key = &dek.as_ref().unwrap().0;
+        let mut decrypted_items = HashSet::with_capacity(items.capacity());
+        for (_, item) in items.iter() {
+            decrypted_items.insert(item.decrypt::<Item>(key)?.into());
+        }
+
+        log::trace!("Decrypted {} item(s)", decrypted_items.len());
+        Ok(decrypted_items)
     }
 
     pub fn is_locked(&self) -> Result<bool> {

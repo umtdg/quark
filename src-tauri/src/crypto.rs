@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use aes_gcm::{
-    aead::{rand_core::RngCore, Aead, OsRng},
+    aead::{rand_core::RngCore, Aead, OsRng, Payload},
     Aes256Gcm, Key, KeyInit, Nonce,
 };
 use argon2::{Algorithm, Argon2, Params, Version};
@@ -42,6 +42,17 @@ pub struct EncryptedData {
 }
 
 impl EncryptedData {
+    pub fn encrypt<'msg, 'aad, T: Into<Payload<'msg, 'aad>>>(value: T, key: &[u8]) -> Result<Self> {
+        let nonce = generate_nonce();
+        let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
+        let ciphertext = cipher.encrypt(Nonce::from_slice(&nonce), value)?;
+
+        Ok(Self {
+            nonce,
+            data: ciphertext,
+        })
+    }
+
     pub fn decrypt<T: TryFrom<Vec<u8>>>(&self, key: &[u8]) -> Result<T> {
         let nonce = Nonce::from_slice(&self.nonce);
         let aes256_gcm = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
@@ -67,14 +78,7 @@ impl Dek {
     }
 
     pub fn encrypt(&self, kek: &Kek) -> Result<EncryptedData> {
-        let nonce = generate_nonce();
-        let aes256_gcm = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&kek.0));
-        let ciphertext = aes256_gcm.encrypt(Nonce::from_slice(&nonce), self.0.as_ref())?;
-
-        Ok(EncryptedData {
-            nonce,
-            data: ciphertext,
-        })
+        EncryptedData::encrypt(self.0.as_ref(), &kek.0)
     }
 }
 

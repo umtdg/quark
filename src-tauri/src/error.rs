@@ -1,6 +1,6 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error(transparent)]
+    #[error("error when serializing/deserializing data")]
     Json(#[from] serde_json::Error),
 
     #[error("current platform may not be supported")]

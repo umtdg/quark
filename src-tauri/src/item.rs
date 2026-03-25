@@ -4,6 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::date;
+use crate::error::{Error, Result};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemLogin {
@@ -99,9 +100,21 @@ impl Hash for Item {
     }
 }
 
+impl TryFrom<Vec<u8>> for Item {
+    type Error = Error;
+
+    fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
+        serde_json::from_slice(value.as_slice()).map_err(Into::into)
+    }
+}
+
 impl Item {
     pub fn composite_key(&self) -> String {
         format!("{}/{}", self.share_id, self.id)
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).map_err(Into::into)
     }
 }
 
