@@ -4,68 +4,42 @@ mod crypto;
 mod date;
 mod error;
 mod item;
+mod shell;
 mod state;
 mod tray;
 mod vault;
 
-use std::sync::{Arc, Mutex};
-
 use tauri::{AppHandle, Builder, Emitter, Manager, Runtime, State, Window, WindowEvent};
+use zeroize::Zeroize;
 
-use crate::config::AppConfig;
-use crate::crypto::Dek;
+use crate::crypto::EncryptionState;
 use crate::error::{Error, Result};
-use crate::item::items_from_pass_cli;
+use crate::shell::{get_vault_items, get_vaults};
 use crate::state::AppState;
 use crate::tray::create_icon;
-use crate::vault::vaults_from_pass_cli;
 
 #[tauri::command]
-async fn refresh_items(
-    app: AppHandle,
-    state: State<'_, Arc<Mutex<AppState>>>,
-    dek: State<'_, Arc<Mutex<Option<Dek>>>>,
-    config: State<'_, AppConfig>,
-) -> Result<()> {
-    app.emit("refresh-started", None::<&str>)?;
+async fn refresh_items(app_handle: AppHandle, state: State<'_, AppState>) -> Result<()> {
+    app_handle.emit("refresh-started", None::<&str>)?;
 
-    {
-        let dek = dek
-            .try_lock()
-            .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
-
-        if dek.is_none() {
-            return Err(Error::Locked);
-        }
+    if state.is_locked()? {
+        return Err(Error::Locked);
     }
 
-    let vaults = vaults_from_pass_cli(&app, &config).await?;
+    let pass_cli_path = state.config.get_pass_cli_path();
+
+    let vaults = get_vaults(app_handle.clone(), pass_cli_path).await?;
     for vault in vaults {
-        let vault_items = items_from_pass_cli(&app, &config, &vault.share_id).await?;
+        let vault_items =
+            get_vault_items(app_handle.clone(), pass_cli_path, &vault.share_id).await?;
 
         log::debug!("Adding vault items to stored items");
-        {
-            let mut state = state
-                .try_lock()
-                .map_err(|_| Error::TryLock("application state".into()))?;
-
-            for item in &vault_items {
-                state
-                    .items
-                    .insert(format!("{}/{}", item.share_id, item.id), item.into());
-            }
-        }
+        state.extend(vault_items)?;
     }
 
-    {
-        let state = state
-            .try_lock()
-            .map_err(|_| Error::TryLock("application state".into()))?;
+    state.save(app_handle.clone())?;
 
-        state.save(config.get_state_file())?;
-    }
-
-    app.emit("refresh-completed", None::<&str>)?;
+    app_handle.emit("refresh-completed", None::<&str>)?;
 
     Ok(())
 }
@@ -110,19 +84,27 @@ pub fn run() -> Result<()> {
     let app = builder.build(tauri::generate_context!())?;
     let app_handle = app.handle();
 
-    let _ = create_icon(app_handle)?;
+    let _tray_icon = create_icon(app_handle)?;
 
-    log::debug!("Read config");
-    let app_config = AppConfig::load(app_handle)?;
-    log::debug!("Application config: {:?}", app_config);
+    let app_state = match AppState::load(app_handle.clone())? {
+        Some(app_state) => app_state,
+        None => {
+            log::debug!("Creating new application state");
 
-    log::debug!("Load or create application state");
-    let app_state = AppState::load_or_new(app_config.get_state_file())?;
-    let dek: Option<Dek> = None;
+            // TODO: Prompt for password
+            let mut password: Vec<u8> = b"password".into();
 
-    app.manage(app_config);
-    app.manage(Arc::new(Mutex::new(app_state)));
-    app.manage(Arc::new(Mutex::new(dek)));
+            let (encryption_state, new_dek) = EncryptionState::new(&password)?;
+            let app_state = AppState::new(app_handle.clone(), encryption_state, Some(new_dek))?;
+
+            password.zeroize();
+
+            app_state.save(app_handle.clone())?;
+            app_state
+        }
+    };
+
+    app.manage(app_state);
 
     app.run(|_, _| {});
 

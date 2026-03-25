@@ -1,13 +1,9 @@
-use std::{collections::HashSet, hash::Hash};
+use std::hash::Hash;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
-use tauri_plugin_shell::ShellExt;
 
-use crate::config::AppConfig;
 use crate::date;
-use crate::error::Result;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemLogin {
@@ -103,6 +99,12 @@ impl Hash for Item {
     }
 }
 
+impl Item {
+    pub fn composite_key(&self) -> String {
+        format!("{}/{}", self.share_id, self.id)
+    }
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemRef {
     pub id: String,
@@ -111,8 +113,8 @@ pub struct ItemRef {
     pub itype: String,
 }
 
-impl From<&Item> for ItemRef {
-    fn from(value: &Item) -> Self {
+impl From<Item> for ItemRef {
+    fn from(value: Item) -> Self {
         ItemRef {
             id: value.id.clone(),
             share_id: value.share_id.clone(),
@@ -138,43 +140,4 @@ impl Hash for ItemRef {
         self.id.hash(state);
         self.share_id.hash(state);
     }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ItemsOutput {
-    pub items: HashSet<Item>,
-}
-
-pub async fn items_from_pass_cli(
-    app_handle: &AppHandle,
-    app_config: &AppConfig,
-    share_id: &str,
-) -> Result<HashSet<Item>> {
-    log::debug!("Getting items from pass-cli for share {}", share_id);
-
-    let pass_cli_path = app_config.get_pass_cli_path();
-
-    let shell = app_handle.shell();
-    let output = shell
-        .command(pass_cli_path)
-        .args([
-            "item",
-            "list",
-            "--share-id",
-            share_id,
-            "--output",
-            "json",
-            "--filter-type",
-            "login",
-        ])
-        .output()
-        .await?;
-
-    log::trace!("Decoding pass-cli stdout");
-    let stdout = String::from_utf8(output.stdout)?;
-
-    log::trace!("Parsing pass-cli output as JSON");
-    let json: ItemsOutput = serde_json::from_str(&stdout)?;
-
-    Ok(json.items)
 }

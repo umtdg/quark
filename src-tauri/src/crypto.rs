@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use aes_gcm::{
     aead::{rand_core::RngCore, Aead, OsRng},
     Aes256Gcm, Key, KeyInit, Nonce,
@@ -76,6 +78,12 @@ impl Dek {
     }
 }
 
+impl Debug for Dek {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("***")
+    }
+}
+
 #[derive(Zeroize, ZeroizeOnDrop)]
 pub struct Kek(pub [u8; 32]);
 
@@ -91,6 +99,40 @@ impl Kek {
         .hash_password_into(password, &salt, &mut kek)?;
 
         Ok(Self(kek))
+    }
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct EncryptionState {
+    pub kdf: String,
+    pub kdf_params: KdfParams,
+
+    #[serde(with = "base64_serde")]
+    pub salt: [u8; 16],
+
+    pub wrapped_dek: EncryptedData,
+}
+
+impl EncryptionState {
+    pub fn new(password: &[u8]) -> Result<(Self, Dek)> {
+        let salt = generate_salt();
+        let kdf_params = KdfParams::new();
+        let mut kek = Kek::new(password, salt, kdf_params.clone())?;
+
+        let dek = Dek::new();
+        let wrapped_dek = dek.encrypt(&kek)?;
+
+        kek.zeroize();
+
+        Ok((
+            Self {
+                kdf: "argon2".into(),
+                kdf_params,
+                salt,
+                wrapped_dek,
+            },
+            dek,
+        ))
     }
 }
 

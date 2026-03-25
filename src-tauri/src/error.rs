@@ -18,8 +18,8 @@ pub enum Error {
     #[error("error when decoding decrypted data")]
     Decoding,
 
-    #[error("error running pass-cli")]
-    PassCli(#[from] tauri_plugin_shell::Error),
+    #[error("error running shell command")]
+    Shell(#[from] tauri_plugin_shell::Error),
 
     #[error("error decoding string as utf-8")]
     Utf8(#[from] std::string::FromUtf8Error),
