@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
+use std::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
 use tauri::{Manager, Runtime};
@@ -13,14 +13,14 @@ use crate::item::{Item, ItemRef};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppState {
-    pub encryption_state: Arc<EncryptionState>,
-    pub items: Arc<RwLock<HashMap<String, EncryptedData>>>,
+    pub encryption_state: EncryptionState,
+    pub items: RwLock<HashMap<String, EncryptedData>>,
 
     #[serde(skip_deserializing, skip_serializing)]
-    pub dek: Arc<RwLock<Option<Dek>>>,
+    pub dek: RwLock<Option<Dek>>,
 
     #[serde(skip_deserializing, skip_serializing)]
-    pub config: Arc<AppConfig>,
+    pub config: AppConfig,
 }
 
 impl AppState {
@@ -35,10 +35,10 @@ impl AppState {
         let config = AppConfig::load(manager)?;
 
         Ok(Self {
-            encryption_state: Arc::new(encryption_state),
-            items: Arc::new(RwLock::new(HashMap::with_capacity(128))),
-            dek: Arc::new(RwLock::new(dek)),
-            config: Arc::new(config),
+            encryption_state,
+            items: RwLock::new(HashMap::with_capacity(128)),
+            dek: RwLock::new(dek),
+            config,
         })
     }
 
@@ -53,7 +53,7 @@ impl AppState {
 
         let state_json = fs::read_to_string(&path)?;
         let mut app_state: Self = serde_json::from_str(&state_json)?;
-        app_state.config = Arc::new(AppConfig::load(app_handle.clone())?);
+        app_state.config = AppConfig::load(app_handle.clone())?;
 
         Ok(Some(app_state))
     }
