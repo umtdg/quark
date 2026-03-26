@@ -18,9 +18,6 @@ pub struct AppState {
 
     #[serde(skip_deserializing, skip_serializing)]
     pub dek: RwLock<Option<Dek>>,
-
-    #[serde(skip_deserializing, skip_serializing)]
-    pub config: AppConfig,
 }
 
 impl AppState {
@@ -30,25 +27,16 @@ impl AppState {
         Ok(AppConfig::local_data_dir(manager)?.join(Self::STATE_FILE_NAME))
     }
 
-    pub fn new<M: Manager<R>, R: Runtime>(
-        manager: M,
-        encryption_state: EncryptionState,
-        dek: Option<Dek>,
-    ) -> Result<Self> {
-        log::info!("Loading application configuration");
-        let config = AppConfig::load(manager)?;
-
+    pub fn new(encryption_state: EncryptionState, dek: Option<Dek>) -> Result<Self> {
         Ok(Self {
             encryption_state,
             items: RwLock::new(HashMap::with_capacity(128)),
             dek: RwLock::new(dek),
-            config,
         })
     }
 
     pub fn load<M: Manager<R>, R: Runtime>(manager: M) -> Result<Option<Self>> {
-        let app_handle = manager.app_handle();
-        let path = Self::state_file_path(app_handle.clone())?;
+        let path = Self::state_file_path(manager)?;
 
         let exists = fs::exists(&path)?;
         if !exists {
@@ -56,10 +44,7 @@ impl AppState {
         }
 
         let state_json = fs::read_to_string(&path)?;
-        let mut app_state: Self = serde_json::from_str(&state_json)?;
-        app_state.config = AppConfig::load(app_handle.clone())?;
-
-        Ok(Some(app_state))
+        serde_json::from_str(&state_json).map_err(Into::into)
     }
 
     pub fn save<M: Manager<R>, R: Runtime>(&self, manager: M) -> Result<()> {

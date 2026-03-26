@@ -15,6 +15,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Builder, Emitter, Manager, Runtime, State, Window, WindowEvent};
 use zeroize::Zeroize;
 
+use crate::config::AppConfig;
 use crate::crypto::EncryptionState;
 use crate::error::{Error, Result};
 use crate::item::ItemRef;
@@ -35,14 +36,18 @@ struct Pagination {
 }
 
 #[tauri::command]
-async fn refresh_items(app_handle: AppHandle, state: State<'_, AppState>) -> Result<()> {
+async fn refresh_items(
+    app_handle: AppHandle,
+    state: State<'_, AppState>,
+    config: State<'_, AppConfig>,
+) -> Result<()> {
     app_handle.emit("refresh-started", None::<&str>)?;
 
     if state.is_locked()? {
         return Err(Error::Locked);
     }
 
-    let pass_cli_path = state.config.get_pass_cli_path();
+    let pass_cli_path = config.get_pass_cli_path();
 
     let vaults = get_vaults(app_handle.clone(), pass_cli_path).await?;
     for vault in vaults {
@@ -151,7 +156,7 @@ pub fn run() -> Result<()> {
             let (encryption_state, new_dek) = EncryptionState::new(&password)?;
 
             log::debug!("Creating new application state");
-            let app_state = AppState::new(app_handle.clone(), encryption_state, Some(new_dek))?;
+            let app_state = AppState::new(encryption_state, Some(new_dek))?;
 
             password.zeroize();
 
@@ -161,10 +166,14 @@ pub fn run() -> Result<()> {
         }
     };
 
-    log::info!("Application config: {:?}", app_state.config);
+    let app_config = AppConfig::load(app_handle.clone())?;
+    log::info!("Application config: {:?}", app_config);
 
     log::trace!("Manage application state");
     app.manage(app_state);
+
+    log::trace!("Manage application config");
+    app.manage(app_config);
 
     log::info!("Runing application");
     app.run(|_, _| {});
