@@ -75,11 +75,7 @@ impl AppState {
             .read()
             .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
 
-        if dek.is_none() {
-            return Err(Error::Locked);
-        }
-
-        let key = &dek.as_ref().unwrap().0;
+        let key = &dek.as_ref().ok_or(Error::Locked)?.0;
 
         log::debug!("Encrypting items and adding to state");
         for item in new_items {
