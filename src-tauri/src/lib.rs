@@ -71,11 +71,6 @@ fn get_items(
     query: String,
     pagination: Pagination,
 ) -> Result<PageResult<HashSet<ItemRef>>> {
-    log::debug!("Check if app is unlocked");
-    if state.is_locked()? {
-        return Err(Error::Locked);
-    }
-
     log::debug!("Getting decrypted item refs");
     let item_refs = state.get_decrypted_item_refs()?;
 
