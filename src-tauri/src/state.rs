@@ -26,6 +26,10 @@ pub struct AppState {
 impl AppState {
     pub const STATE_FILE_NAME: &str = "state.json";
 
+    pub fn state_file_path<M: Manager<R>, R: Runtime>(manager: M) -> Result<PathBuf> {
+        Ok(AppConfig::local_data_dir(manager)?.join(Self::STATE_FILE_NAME))
+    }
+
     pub fn new<M: Manager<R>, R: Runtime>(
         manager: M,
         encryption_state: EncryptionState,
@@ -73,24 +77,6 @@ impl AppState {
         fs::write(path, state_json)?;
 
         Ok(())
-    }
-
-    pub fn config_dir<M: Manager<R>, R: Runtime>(manager: M) -> Result<PathBuf> {
-        manager
-            .path()
-            .app_config_dir()
-            .map_err(|_| Error::PlatformNotSupported)
-    }
-
-    pub fn local_data_dir<M: Manager<R>, R: Runtime>(manager: M) -> Result<PathBuf> {
-        manager
-            .path()
-            .app_local_data_dir()
-            .map_err(|_| Error::PlatformNotSupported)
-    }
-
-    pub fn state_file_path<M: Manager<R>, R: Runtime>(manager: M) -> Result<PathBuf> {
-        Ok(Self::local_data_dir(manager)?.join(Self::STATE_FILE_NAME))
     }
 
     pub fn extend(&self, new_items: HashSet<Item>) -> Result<()> {
