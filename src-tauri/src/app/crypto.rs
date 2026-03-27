@@ -8,7 +8,7 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::base64_serde;
+use crate::serde::base64_serde;
 use crate::error::{Error, Result};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -103,40 +103,6 @@ impl Kek {
         .hash_password_into(password, &salt, &mut kek)?;
 
         Ok(Self(kek))
-    }
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct EncryptionState {
-    pub kdf: String,
-    pub kdf_params: KdfParams,
-
-    #[serde(with = "base64_serde")]
-    pub salt: [u8; 16],
-
-    pub wrapped_dek: EncryptedData,
-}
-
-impl EncryptionState {
-    pub fn new(password: &[u8]) -> Result<(Self, Dek)> {
-        let salt = generate_salt();
-        let kdf_params = KdfParams::new();
-        let mut kek = Kek::new(password, salt, kdf_params.clone())?;
-
-        let dek = Dek::new();
-        let wrapped_dek = dek.encrypt(&kek)?;
-
-        kek.zeroize();
-
-        Ok((
-            Self {
-                kdf: "argon2".into(),
-                kdf_params,
-                salt,
-                wrapped_dek,
-            },
-            dek,
-        ))
     }
 }
 

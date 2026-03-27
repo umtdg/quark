@@ -6,8 +6,7 @@ use tauri::{Manager, Runtime};
 use tauri_plugin_shell::ShellExt;
 
 use crate::error::Result;
-use crate::item::Item;
-use crate::vault::Vault;
+use crate::item::{Item, Vault};
 
 #[derive(Debug, Deserialize)]
 struct VaultListOutput {

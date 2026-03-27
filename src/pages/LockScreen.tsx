@@ -1,11 +1,7 @@
 import { ArrowForward } from "../components";
 
-export interface LockScreenProps {
-  message?: string | undefined;
-}
-
-export default function LockScreen(props: LockScreenProps) {
-  const message = props.message || "Type your password to unlock";
+export default function LockScreen() {
+  const message = "Type your password to unlock";
 
   return (
     <div className="w-80 flex flex-col items-center justify-center gap-8">

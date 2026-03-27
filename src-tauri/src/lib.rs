@@ -1,27 +1,20 @@
-mod base64_serde;
-mod config;
-mod crypto;
-mod date;
+mod app;
 mod error;
 mod item;
-mod shell;
-mod state;
-mod tray;
-mod vault;
+mod serde;
 
 use std::collections::HashSet;
 
-use serde::{Deserialize, Serialize};
+use ::serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Builder, Emitter, Manager, Runtime, State, Window, WindowEvent};
 use zeroize::Zeroize;
 
-use crate::config::AppConfig;
-use crate::crypto::EncryptionState;
+use crate::app::config::AppConfig;
+use crate::app::shell::{get_vault_items, get_vaults};
+use crate::app::state::{AppState, CryptoState, ItemState, RuntimeState};
+use crate::app::tray::create_icon;
 use crate::error::{Error, Result};
 use crate::item::ItemRef;
-use crate::shell::{get_vault_items, get_vaults};
-use crate::state::AppState;
-use crate::tray::create_icon;
 
 #[derive(Serialize)]
 struct PageResult<T> {
@@ -38,12 +31,12 @@ struct Pagination {
 #[tauri::command]
 async fn refresh_items(
     app_handle: AppHandle,
-    state: State<'_, AppState>,
+    item_state: State<'_, ItemState>,
     config: State<'_, AppConfig>,
 ) -> Result<()> {
     app_handle.emit("refresh-started", None::<&str>)?;
 
-    if state.is_locked()? {
+    if item_state.is_locked()? {
         return Err(Error::Locked);
     }
 
@@ -55,10 +48,10 @@ async fn refresh_items(
             get_vault_items(app_handle.clone(), pass_cli_path, &vault.share_id).await?;
 
         log::debug!("Adding vault items to stored items");
-        state.extend(vault_items)?;
+        item_state.extend(vault_items)?;
     }
 
-    state.save(app_handle.clone())?;
+    item_state.save(app_handle.clone())?;
 
     app_handle.emit("refresh-completed", None::<&str>)?;
 
@@ -67,12 +60,12 @@ async fn refresh_items(
 
 #[tauri::command]
 fn get_items(
-    state: State<'_, AppState>,
+    item_state: State<'_, ItemState>,
     query: String,
     pagination: Pagination,
 ) -> Result<PageResult<HashSet<ItemRef>>> {
     log::debug!("Getting decrypted item refs");
-    let item_refs = state.get_decrypted_item_refs()?;
+    let item_refs = item_state.get_decrypted_item_refs()?;
 
     let query = query.to_lowercase();
     let mut matches: Vec<&ItemRef> = item_refs
@@ -92,6 +85,37 @@ fn get_items(
         .collect();
 
     Ok(PageResult { items: page, total })
+}
+
+#[tauri::command]
+async fn init_crypto(
+    app_handle: AppHandle,
+    runtime_state: State<'_, RuntimeState>,
+    item_state: State<'_, ItemState>,
+    mut password: String,
+) -> Result<()> {
+    let (crypto_state, new_dek) = CryptoState::new(password.as_bytes())?;
+    password.zeroize();
+
+    crypto_state.save(app_handle.clone())?;
+
+    item_state.replace_dek(new_dek)?;
+    runtime_state.set_first_launch(false)?;
+
+    app_handle.manage(crypto_state);
+    app_handle.emit("state-changed", None::<&str>)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+fn is_locked(item_state: State<'_, ItemState>) -> Result<bool> {
+    item_state.is_locked()
+}
+
+#[tauri::command]
+fn is_first_launch(runtime_state: State<'_, RuntimeState>) -> Result<bool> {
+    runtime_state.is_first_launch()
 }
 
 fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
@@ -129,46 +153,52 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .on_window_event(on_window_event)
-        .invoke_handler(tauri::generate_handler![refresh_items, get_items]);
+        .invoke_handler(tauri::generate_handler![
+            refresh_items,
+            get_items,
+            init_crypto,
+            is_locked,
+            is_first_launch,
+        ]);
 
     let app = builder.build(tauri::generate_context!())?;
     let app_handle = app.handle();
 
     let _tray_icon = create_icon(app_handle)?;
 
-    let app_state = match AppState::load(app_handle.clone())? {
-        Some(app_state) => {
-            log::debug!("Loaded application state from existing file");
-            app_state
-        }
-        None => {
-            log::debug!("First launch. Creating new application state");
-
-            // TODO: Prompt for password
-            let mut password: Vec<u8> = b"password".into();
-
-            log::debug!("Creating new encryption state");
-            let (encryption_state, new_dek) = EncryptionState::new(&password)?;
-
-            log::debug!("Creating new application state");
-            let app_state = AppState::new(encryption_state, Some(new_dek))?;
-
-            password.zeroize();
-
-            log::debug!("Saving application state to file");
-            app_state.save(app_handle.clone())?;
-            app_state
-        }
-    };
-
     let app_config = AppConfig::load(app_handle.clone())?;
     log::info!("Application config: {:?}", app_config);
-
-    log::trace!("Manage application state");
-    app.manage(app_state);
-
-    log::trace!("Manage application config");
     app.manage(app_config);
+
+    let runtime_state = RuntimeState::new(false);
+
+    let item_state = match ItemState::load(app_handle.clone())? {
+        Some(item_state) => {
+            log::info!("Loaded item state from existing file");
+            item_state
+        }
+        None => {
+            log::info!("Creating empty item state");
+            let item_state = ItemState::new();
+            item_state.save(app_handle.clone())?;
+
+            item_state
+        }
+    };
+    app.manage(item_state);
+
+    match CryptoState::load(app_handle.clone())? {
+        Some(crypto_state) => {
+            log::info!("Loaded crypto state from existing file");
+            app.manage(crypto_state);
+        }
+        None => {
+            log::info!("No crypto state is found. Setting first_launch = true");
+            runtime_state.set_first_launch(true)?;
+        }
+    }
+
+    app.manage(runtime_state);
 
     log::info!("Runing application");
     app.run(|_, _| {});

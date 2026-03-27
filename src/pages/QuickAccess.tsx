@@ -90,12 +90,12 @@ export default function QuickAccess() {
         <button
           disabled={refreshing}
           onClick={refreshing ? undefined : refreshItems}
-          className="p-2 rounded-lg hover:bg-text/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          className="p-2 rounded-lg hover:bg-text/10 cursor-pointer disabled:opacity-50 disabled:cursor-default"
         >
-          <Refresh className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+          <Refresh className={`w-5 h-5 fill-primary ${refreshing ? "animate-spin" : ""}`} />
         </button>
-        <button disabled={refreshing} onClick={refreshing ? undefined : lock}>
-          <Lock className="w-5 h-5" />
+        <button disabled={refreshing} onClick={refreshing ? undefined : lock} className="p-2 rounded-lg hover:bg-text/10 cursor-pointer">
+          <Lock className="w-5 h-5 fill-primary" />
         </button>
       </div>
 
