@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
-import { Box } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
 
-import QuickAccess from "./QuickAccess";
-import LockScreen from "./LockScreen";
+import { LockScreen, QuickAccess } from "./pages";
 
 export default function App() {
   const [isLocked, setIsLocked] = useState(true);
@@ -15,8 +13,8 @@ export default function App() {
   }, [isLocked]);
 
   return (
-    <Box tabIndex={-1} sx={{ outline: "none", justifyContent: "center", alignItems: "center" }}>
+    <div className="h-screen w-full flex flex-col items-center justify-center bg-bg text-text">
       {isLocked ? <LockScreen /> : <QuickAccess />}
-    </Box>
+    </div>
   );
 }

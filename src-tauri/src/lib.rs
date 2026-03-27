@@ -105,7 +105,7 @@ fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
         WindowEvent::Focused(false) => {
             log::debug!("Window lost focus, hiding to system tray");
 
-            window.hide().unwrap();
+            // window.hide().unwrap();
         }
         _ => (),
     }

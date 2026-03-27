@@ -1,17 +1,7 @@
-import {
-  Box,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
-  Pagination,
-  Stack,
-  TextField,
-} from "@mui/material";
-import { RefreshRounded as RefreshIcon } from "@mui/icons-material";
-import { Theme, SxProps } from "@mui/material/styles";
 import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+
+import { Refresh, Lock } from "../components";
 
 interface ItemRef {
   id: string;
@@ -71,61 +61,61 @@ export default function QuickAccess() {
       })
       .catch((reason) => {
         console.error("error when refreshing items:", reason);
+        setRefreshing(false);
       });
   }
 
+  function lock() {}
+
   useEffect(getItems, [query, page]);
 
-  let refreshIconSx: SxProps<Theme> = {};
-  if (refreshing) {
-    refreshIconSx = {
-      animation: "spin 2s linear infinite",
-      "@keyframes spin": {
-        "0%": {
-          transform: "rotate(-360deg)",
-        },
-        "100%": {
-          transform: "rotate(0deg)",
-        },
-      },
-    };
-  }
-
   return (
-    <Box onKeyDown={handleKeyDown}>
-      <Stack direction="row">
-        <TextField
+    <div
+      tabIndex={-1}
+      onKeyDown={handleKeyDown}
+      className="flex flex-col h-full w-full px-2 outline-none"
+    >
+      <div className="flex flex-row gap-2 p-2">
+        <input
           autoFocus
-          fullWidth
+          type="text"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
             setPage(1);
           }}
           placeholder="Search"
+          className="flex-1 px-3 py-2 border border-text/20 rounded-lg placeholder-text/50 focus:outline-none focus:ring-2 focus:ring-text/30"
         />
-        <IconButton disabled={refreshing}>
-          <RefreshIcon onClick={refreshing ? undefined : refreshItems} sx={refreshIconSx} />
-        </IconButton>
-      </Stack>
+        <button
+          disabled={refreshing}
+          onClick={refreshing ? undefined : refreshItems}
+          className="p-2 rounded-lg hover:bg-text/10 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Refresh className={`w-5 h-5 ${refreshing ? "animate-spin" : ""}`} />
+        </button>
+        <button disabled={refreshing} onClick={refreshing ? undefined : lock}>
+          <Lock className="w-5 h-5" />
+        </button>
+      </div>
 
-      <List ref={listRef}>
+      <ul ref={listRef} className="flex-1 overflow-y-auto">
         {items.map((item, index) => {
           return (
-            <ListItemButton
+            <li
               key={item.id}
-              selected={index == selectedIndex}
               onClick={() => setSelectedIndex(index)}
+              className={
+                "px-4 py-3 cursor-pointer hover:bg-text/10" +
+                (index === selectedIndex && " bg-text/20")
+              }
             >
-              <ListItemText primary={item.title} secondary={item.itype} />
-            </ListItemButton>
+              <div className="text-sm font-medium">{item.title}</div>
+              <div className="text-xs text-text/50">{item.itype}</div>
+            </li>
           );
         })}
-      </List>
-
-      {pageCount > 0 && (
-        <Pagination count={pageCount} page={page} onChange={(_, val) => setPage(val)} />
-      )}
-    </Box>
+      </ul>
+    </div>
   );
 }
