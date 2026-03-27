@@ -1,208 +1,22 @@
-import React, { useEffect, useRef, useState } from "react";
-import {
-    Box,
-    IconButton,
-    List,
-    ListItemButton,
-    ListItemText,
-    Pagination,
-    Stack,
-    TextField,
-    Typography,
-} from "@mui/material";
-import {
-    RefreshRounded as RefreshIcon,
-} from "@mui/icons-material";
-
+import { useEffect, useState } from "react";
+import { Box } from "@mui/material";
 import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
-import { writeText } from "@tauri-apps/plugin-clipboard-manager";
-import { SxProps, Theme } from "@mui/material/styles";
 
-interface ItemRef {
-    id: string;
-    shareId: string;
-    title: string;
-    itype: string;
-}
-
-interface PageResult<T> {
-    items: T[];
-    total: number;
-}
+import QuickAccess from "./QuickAccess";
+import LockScreen from "./LockScreen";
 
 export default function App() {
-    const PAGE_SIZE = 25;
+  const [isLocked, setIsLocked] = useState(true);
 
-    const [query, setQuery] = useState("");
-    const [items, setItems] = useState<ItemRef[]>([]);
-    const [page, setPage] = useState(1);
-    const [pageCount, setPageCount] = useState(1);
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const [selectedRef, setSelectedRef] = useState<ItemRef | undefined>(undefined)
-    const [refreshing, setRefreshing] = useState(false);
-    const [refreshStatus, setRefreshStatus] = useState("");
-    const listRef = useRef(null);
+  useEffect(() => {
+    invoke<boolean>("is_locked")
+      .then(setIsLocked)
+      .catch(() => setIsLocked(true));
+  }, [isLocked]);
 
-    function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
-        switch (e.key) {
-            case "ArrowDown":
-                e.preventDefault();
-                setSelectedIndex(i => Math.min(i + 1, items.length - 1));
-                break;
-            case "ArrowUp":
-                e.preventDefault();
-                setSelectedIndex(i => Math.max(i - 1, 0));
-                break;
-            case "c":
-                if (!e.ctrlKey) {
-                    break;
-                }
-
-                if (!selectedRef) {
-                    break;
-                }
-
-                const fn = e.altKey ? "copy_alt" : "copy_primary"
-                invoke<string | undefined>(fn, { itemRef: selectedRef })
-                    .then((secret) => {
-                        if (secret) {
-                            writeText(secret);
-                        }
-                    });
-                break;
-            case "C":
-                if (!e.ctrlKey) {
-                    break;
-                }
-
-                if (!selectedRef) {
-                    break;
-                }
-
-                invoke<string | undefined>("copy_secondary", { itemRef: selectedRef })
-                    .then((secret) => {
-                        if (secret) {
-                            writeText(secret);
-                        }
-                    })
-                break;
-            // add other shortcuts here
-        }
-    };
-
-    function refreshItems() {
-        invoke("refresh_items")
-            .catch((reason) => {
-                console.error("failed to refresh items:", reason);
-                setRefreshing(false);
-            });
-    }
-
-    function fetchItems() {
-        invoke<PageResult<ItemRef>>("get_items", {
-            pagination: {
-                offset: (page - 1) * PAGE_SIZE,
-                limit: PAGE_SIZE,
-            },
-            query: query.toLowerCase(),
-        }).then(({ items, total }) => {
-            setItems(items);
-            setSelectedIndex(0);
-            setSelectedRef(items.length > 0 ? items[selectedIndex] : undefined);
-
-            const pageCount = Math.floor(total / PAGE_SIZE);
-            const lastPage = (total % PAGE_SIZE == 0) ? 0 : 1;
-            setPageCount(pageCount + lastPage);
-        });
-    }
-
-    useEffect(fetchItems, [query, page]);
-
-    useEffect(() => { setPage(1); }, [query]);
-
-    useEffect(() => {
-        if (items.length === 0 || selectedIndex < 0 || selectedIndex >= items.length) {
-            setSelectedRef(undefined);
-        } else {
-            setSelectedRef(items[selectedIndex]);
-        }
-    }, [selectedIndex]);
-
-
-    listen<number | undefined>("refresh-started", (_) => {
-        setRefreshing(true);
-        setRefreshStatus("");
-    });
-
-    listen<string>("refresh-failed", (event) => {
-        setRefreshing(false);
-        setRefreshStatus(event.payload);
-    });
-
-    listen<number | undefined>("refresh-completed", (_) => {
-        setRefreshing(false);
-        setRefreshStatus("");
-
-        fetchItems()
-    });
-
-    let refreshIconSx: SxProps<Theme> | undefined = undefined;
-    if (refreshing) {
-        refreshIconSx = {
-            animation: "spin 2s linear infinite",
-            "@keyframes spin": {
-                "0%": {
-                    transform: "rotate(-360deg)",
-                },
-                "100%": {
-                    transform: "rotate(0deg)",
-                },
-            },
-        }
-    }
-
-    return (
-        <Box onKeyDown={handleKeyDown} tabIndex={-1} sx={{ outline: "none" }}>
-            <Stack direction="row">
-                <TextField
-                    autoFocus
-                    fullWidth
-                    value={query}
-                    onChange={e => setQuery(e.target.value)}
-                    placeholder="Search"
-                />
-                <IconButton disabled={refreshing}>
-                    <RefreshIcon onClick={refreshing ? undefined : refreshItems} sx={refreshIconSx} />
-                </IconButton>
-            </Stack>
-
-            {refreshStatus.length > 0 && (
-                <Typography>{refreshStatus}</Typography>
-            )}
-
-            <List ref={listRef}>
-                {items.map((item, index) => {
-                    return (
-                        <ListItemButton
-                            key={item.id}
-                            selected={index == selectedIndex}
-                            onClick={() => setSelectedIndex(index)}
-                        >
-                            <ListItemText primary={item.title} secondary={item.itype} />
-                        </ListItemButton>
-                    );
-                })}
-            </List>
-
-            {pageCount > 0 &&
-                <Pagination
-                    count={pageCount}
-                    page={page}
-                    onChange={(_, val) => setPage(val)}
-                />
-            }
-
-        </Box >
-    );
+  return (
+    <Box tabIndex={-1} sx={{ outline: "none", justifyContent: "center", alignItems: "center" }}>
+      {isLocked ? <LockScreen /> : <QuickAccess />}
+    </Box>
+  );
 }
