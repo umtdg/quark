@@ -65,7 +65,15 @@ export default function QuickAccess() {
       });
   }
 
-  function lock() {}
+  function lock() {
+    invoke("lock")
+      .then(() => {
+        console.log("Locked successfully");
+      })
+      .catch((reason) => {
+        console.log("Failed to lock:", reason);
+      });
+  }
 
   useEffect(getItems, [query, page]);
 
@@ -94,7 +102,11 @@ export default function QuickAccess() {
         >
           <Refresh className={`w-5 h-5 fill-primary ${refreshing ? "animate-spin" : ""}`} />
         </button>
-        <button disabled={refreshing} onClick={refreshing ? undefined : lock} className="p-2 rounded-lg hover:bg-text/10 cursor-pointer">
+        <button
+          disabled={refreshing}
+          onClick={refreshing ? undefined : lock}
+          className="p-2 rounded-lg hover:bg-text/10 cursor-pointer"
+        >
           <Lock className="w-5 h-5 fill-primary" />
         </button>
       </div>

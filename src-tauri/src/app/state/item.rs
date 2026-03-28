@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
+use zeroize::Zeroize;
 
 use crate::app::crypto::{Dek, EncryptedData};
 use crate::error::{Error, Result};
@@ -40,6 +41,18 @@ impl ItemState {
             .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
 
         Ok(dek.is_none())
+    }
+
+    pub fn lock(&self) -> Result<()> {
+        log::debug!("Waiting DEK for write");
+        let mut dek = self
+            .dek
+            .write()
+            .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
+
+        dek.take();
+
+        Ok(())
     }
 
     pub fn replace_dek(&self, new_dek: Dek) -> Result<()> {

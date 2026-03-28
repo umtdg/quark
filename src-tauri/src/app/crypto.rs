@@ -8,8 +8,8 @@ use argon2::{Algorithm, Argon2, Params, Version};
 use serde::{Deserialize, Serialize};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use crate::serde::base64_serde;
 use crate::error::{Error, Result};
+use crate::serde::base64_serde;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct KdfParams {
@@ -88,11 +88,23 @@ impl Debug for Dek {
     }
 }
 
+impl TryFrom<Vec<u8>> for Dek {
+    type Error = crate::Error;
+
+    fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
+        let dek: [u8; 32] = value.try_into().map_err(|_| {
+            Error::VectorArrayConversion("vector for DEK must have exactly 32 items".into())
+        })?;
+
+        Ok(Self(dek))
+    }
+}
+
 #[derive(Zeroize, ZeroizeOnDrop)]
 pub struct Kek(pub [u8; 32]);
 
 impl Kek {
-    pub fn new(password: &[u8], salt: [u8; 16], params: KdfParams) -> Result<Self> {
+    pub fn new(password: &[u8], salt: &[u8], params: &KdfParams) -> Result<Self> {
         let mut kek = [0; 32];
 
         Argon2::new(

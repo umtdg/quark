@@ -35,6 +35,9 @@ pub enum Error {
 
     #[error("data-encryption-key must be unlocked")]
     Locked,
+
+    #[error("cannot convert vector to array: {0}")]
+    VectorArrayConversion(String)
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -23,7 +23,7 @@ impl CryptoState {
     pub fn new(password: &[u8]) -> Result<(Self, Dek)> {
         let salt = generate_salt();
         let kdf_params = KdfParams::new();
-        let mut kek = Kek::new(password, salt, kdf_params.clone())?;
+        let mut kek = Kek::new(password, &salt, &kdf_params)?;
 
         let dek = Dek::new();
         let wrapped_dek = dek.encrypt(&kek)?;

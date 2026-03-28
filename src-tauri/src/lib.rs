@@ -10,6 +10,7 @@ use tauri::{AppHandle, Builder, Emitter, Manager, Runtime, State, Window, Window
 use zeroize::Zeroize;
 
 use crate::app::config::AppConfig;
+use crate::app::crypto::{Dek, Kek};
 use crate::app::shell::{get_vault_items, get_vaults};
 use crate::app::state::{AppState, CryptoState, ItemState, RuntimeState};
 use crate::app::tray::create_icon;
@@ -109,6 +110,47 @@ async fn init_crypto(
 }
 
 #[tauri::command]
+async fn lock(app_handle: AppHandle, item_state: State<'_, ItemState>) -> Result<()> {
+    item_state.lock()?;
+
+    app_handle.emit("state-changed", None::<&str>)?;
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn unlock(
+    app_handle: AppHandle,
+    item_state: State<'_, ItemState>,
+    crypto_state: State<'_, CryptoState>,
+    mut password: String,
+) -> Result<()> {
+    log::debug!("Waiting DEK for write");
+    let mut dek = item_state
+        .dek
+        .write()
+        .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
+
+    if dek.is_some() {
+        return Ok(());
+    }
+
+    let kek = Kek::new(
+        password.as_bytes(),
+        &crypto_state.salt,
+        &crypto_state.kdf_params,
+    )?;
+    password.zeroize();
+
+    let stored_dek: Dek = crypto_state.wrapped_dek.decrypt(&kek.0)?;
+    dek.replace(stored_dek);
+
+    app_handle.emit("state-changed", None::<&str>)?;
+
+    Ok(())
+}
+
+#[tauri::command]
 fn is_locked(item_state: State<'_, ItemState>) -> Result<bool> {
     item_state.is_locked()
 }
@@ -157,6 +199,8 @@ pub fn run() -> Result<()> {
             refresh_items,
             get_items,
             init_crypto,
+            lock,
+            unlock,
             is_locked,
             is_first_launch,
         ]);
