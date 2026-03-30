@@ -1,6 +1,6 @@
-pub(crate) mod cli;
-pub(crate) mod config;
-pub(crate) mod crypto;
-pub(crate) mod shell;
-pub(crate) mod state;
-pub(crate) mod tray;
+pub mod cli;
+pub mod config;
+pub mod crypto;
+pub mod shell;
+pub mod state;
+pub mod tray;

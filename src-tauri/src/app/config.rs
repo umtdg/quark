@@ -26,6 +26,7 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
+    pub const FILE_NAME: &str = "config.toml";
     pub const DEFAULT_PASS_CLI_PATH: &str = "pass-cli";
 
     pub fn load<P: AsRef<Path>>(path: P) -> Result<Self> {
