@@ -3,6 +3,33 @@
 version = 4
 
 [[package]]
+name = "Quark"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "anyhow",
+ "argon2",
+ "base64 0.22.1",
+ "chrono",
+ "clap",
+ "clippy",
+ "config",
+ "dirs 6.0.0",
+ "log",
+ "rand 0.10.0",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-clipboard-manager",
+ "tauri-plugin-log",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "thiserror 2.0.18",
+ "zeroize",
+]
+
+[[package]]
 name = "adler2"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -159,16 +186,6 @@ name = "anyhow"
 version = "1.0.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
-
-[[package]]
-name = "anyhow-tauri"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b911500b8bce90dd5671a68fe4313f2c8614b9a80c8454d8d00f8721988657f9"
-dependencies = [
- "anyhow",
- "serde",
-]
 
 [[package]]
 name = "arboard"
@@ -3577,34 +3594,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
 dependencies = [
  "unicode-ident",
-]
-
-[[package]]
-name = "proton-pass-quick-access"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "anyhow",
- "anyhow-tauri",
- "argon2",
- "base64 0.22.1",
- "chrono",
- "clap",
- "clippy",
- "config",
- "dirs 6.0.0",
- "log",
- "rand 0.10.0",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-clipboard-manager",
- "tauri-plugin-log",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "thiserror 2.0.18",
- "zeroize",
 ]
 
 [[package]]

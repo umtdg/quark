@@ -1,6 +1,8 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-fn main() {
-    proton_pass_quick_access_lib::run().expect("error when running app");
+use quark_lib::error::Result;
+
+fn main() -> Result<()> {
+    quark_lib::run()
 }

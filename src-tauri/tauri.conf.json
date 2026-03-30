@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Proton Pass Quick Access",
+  "productName": "Quark",
   "version": "0.1.0",
-  "identifier": "proton-pass-quick-access",
+  "identifier": "quark",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Proton Pass Quick Access",
+        "title": "Quark",
         "width": 500,
         "height": 400,
         "decorations": false

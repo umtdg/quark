@@ -1,7 +1,7 @@
-mod app;
-mod error;
-mod item;
-mod serde;
+pub mod app;
+pub mod error;
+pub mod item;
+pub mod serde;
 
 use std::collections::HashSet;
 

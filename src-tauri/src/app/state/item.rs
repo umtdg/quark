@@ -82,8 +82,6 @@ impl ItemState {
 
         log::debug!("Encrypting items and adding to state");
         for item in new_items {
-            log::trace!("Encrypting and inserting item: {:?}", item);
-
             let item_bytes = item.to_bytes()?;
             items.insert(
                 item.composite_key(),
