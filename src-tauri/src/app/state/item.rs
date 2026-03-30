@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 use std::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
-use zeroize::Zeroize;
 
 use crate::app::crypto::{Dek, EncryptedData};
 use crate::error::{Error, Result};

@@ -2,9 +2,7 @@ pub(crate) mod crypto;
 pub(crate) mod item;
 pub(crate) mod runtime;
 
-use std::path::PathBuf;
-
-use tauri::{Manager, Runtime};
+use std::path::Path;
 
 use crate::error::Result;
 pub use crypto::CryptoState;
@@ -14,31 +12,28 @@ pub use runtime::RuntimeState;
 pub trait AppState: Sized {
     const FILE_NAME: &str;
 
-    fn state_file_path<M: Manager<R>, R: Runtime>(manager: M) -> Result<PathBuf>;
+    fn load<P>(path: P) -> Result<Option<Self>>
+    where
+        P: AsRef<Path>;
 
-    fn load<M: Manager<R>, R: Runtime>(manager: M) -> Result<Option<Self>>;
-
-    fn save<M: Manager<R>, R: Runtime>(&self, manager: M) -> Result<()>;
+    fn save<P>(&self, path: P) -> Result<()>
+    where
+        P: AsRef<Path>;
 }
 
 #[macro_export]
 macro_rules! impl_state {
     ($ty: ty, $file_name: expr) => {
-        impl crate::app::state::AppState for $ty {
+        impl $crate::app::state::AppState for $ty {
             const FILE_NAME: &str = $file_name;
 
-            fn state_file_path<M: tauri::Manager<R>, R: tauri::Runtime>(
-                manager: M,
-            ) -> crate::error::Result<std::path::PathBuf> {
-                Ok(crate::app::config::AppConfig::local_data_dir(manager)?.join(Self::FILE_NAME))
-            }
+            fn load<P>(path: P) -> $crate::error::Result<Option<Self>>
+            where
+                P: AsRef<std::path::Path>,
+            {
+                let path = path.as_ref();
 
-            fn load<M: tauri::Manager<R>, R: tauri::Runtime>(
-                manager: M,
-            ) -> crate::error::Result<Option<Self>> {
-                let path = Self::state_file_path(manager)?;
-
-                let exists = std::fs::exists(&path)?;
+                let exists = std::fs::exists(path)?;
                 if !exists {
                     return Ok(None);
                 }
@@ -48,11 +43,11 @@ macro_rules! impl_state {
                 serde_json::from_str(&state_json).map_err(Into::into)
             }
 
-            fn save<M: tauri::Manager<R>, R: tauri::Runtime>(
-                &self,
-                manager: M,
-            ) -> crate::error::Result<()> {
-                let path = Self::state_file_path(manager)?;
+            fn save<P>(&self, path: P) -> $crate::error::Result<()>
+            where
+                P: AsRef<std::path::Path>,
+            {
+                let path = path.as_ref();
 
                 if !path.exists() {
                     if let Some(parent) = path.parent() {

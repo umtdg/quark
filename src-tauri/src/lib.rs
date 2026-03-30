@@ -6,9 +6,11 @@ mod serde;
 use std::collections::HashSet;
 
 use ::serde::{Deserialize, Serialize};
+use clap::Parser;
 use tauri::{AppHandle, Builder, Emitter, Manager, Runtime, State, Window, WindowEvent};
 use zeroize::Zeroize;
 
+use crate::app::cli::{Cli, Command};
 use crate::app::config::AppConfig;
 use crate::app::crypto::{Dek, Kek};
 use crate::app::shell::{get_vault_items, get_vaults};
@@ -32,6 +34,7 @@ struct Pagination {
 #[tauri::command]
 async fn refresh_items(
     app_handle: AppHandle,
+    runtime_state: State<'_, RuntimeState>,
     item_state: State<'_, ItemState>,
     config: State<'_, AppConfig>,
 ) -> Result<()> {
@@ -52,7 +55,7 @@ async fn refresh_items(
         item_state.extend(vault_items)?;
     }
 
-    item_state.save(app_handle.clone())?;
+    item_state.save(runtime_state.data_dir.join(ItemState::FILE_NAME))?;
 
     app_handle.emit("refresh-completed", None::<&str>)?;
 
@@ -98,7 +101,7 @@ async fn init_crypto(
     let (crypto_state, new_dek) = CryptoState::new(password.as_bytes())?;
     password.zeroize();
 
-    crypto_state.save(app_handle.clone())?;
+    crypto_state.save(runtime_state.data_dir.join(CryptoState::FILE_NAME))?;
 
     item_state.replace_dek(new_dek)?;
     runtime_state.set_first_launch(false)?;
@@ -179,6 +182,20 @@ fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
+    let cli = Cli::parse();
+
+    let context = tauri::generate_context!();
+    let bundle_identifier = &context.config().identifier;
+
+    let runtime_state = RuntimeState::new(bundle_identifier.as_str(), false)?;
+
+    let config_path = match &cli.config {
+        Some(config_path) => config_path.clone(),
+        None => runtime_state.config_dir.join("config.toml"),
+    };
+    let mut app_config = AppConfig::load(config_path)?;
+    app_config.merge(&cli);
+
     let tauri_log = tauri_plugin_log::Builder::new()
         .targets([tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::LogDir { file_name: None },
@@ -186,14 +203,39 @@ pub fn run() -> Result<()> {
         .max_file_size(50 * 1024)
         .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(2))
         .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
-        .level(log::LevelFilter::Trace)
+        .level(app_config.get_level_filter())
         .build();
 
     let builder = Builder::default()
         .plugin(tauri_log)
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
+        .plugin(tauri_plugin_single_instance::init(|app, args, _| {
+            log::debug!("App re-launched with args {:?}", args);
+
+            let args = Cli::parse_from(args);
+            match args.command.unwrap_or(Command::Show) {
+                Command::Show => {
+                    let window = app.get_webview_window("main").expect(
+                        "cannot find the main window. try to kill any dangling/zombie processes",
+                    );
+
+                    window.show().expect("error when showing main window");
+                    window.set_focus().expect("error when focusing main window");
+                }
+                Command::Lock => {
+                    let app_handle = app.clone();
+                    let item_state: State<'_, ItemState> = app.state();
+
+                    let _ = tauri::async_runtime::block_on(async move {
+                        lock(app_handle, item_state).await
+                    });
+                }
+                Command::Quit => {
+                    app.exit(0);
+                }
+            }
+        }))
         .on_window_event(on_window_event)
         .invoke_handler(tauri::generate_handler![
             refresh_items,
@@ -205,18 +247,13 @@ pub fn run() -> Result<()> {
             is_first_launch,
         ]);
 
-    let app = builder.build(tauri::generate_context!())?;
+    let app = builder.build(context)?;
     let app_handle = app.handle();
 
     let _tray_icon = create_icon(app_handle)?;
 
-    let app_config = AppConfig::load(app_handle.clone())?;
-    log::info!("Application config: {:?}", app_config);
-    app.manage(app_config);
-
-    let runtime_state = RuntimeState::new(false);
-
-    let item_state = match ItemState::load(app_handle.clone())? {
+    let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
+    let item_state = match ItemState::load(&item_state_path)? {
         Some(item_state) => {
             log::info!("Loaded item state from existing file");
             item_state
@@ -224,25 +261,31 @@ pub fn run() -> Result<()> {
         None => {
             log::info!("Creating empty item state");
             let item_state = ItemState::new();
-            item_state.save(app_handle.clone())?;
+            item_state.save(item_state_path)?;
 
             item_state
         }
     };
-    app.manage(item_state);
 
-    match CryptoState::load(app_handle.clone())? {
+    let crypto_state_path = runtime_state.data_dir.join(CryptoState::FILE_NAME);
+    let crypto_state: Option<CryptoState> = match CryptoState::load(&crypto_state_path)? {
         Some(crypto_state) => {
             log::info!("Loaded crypto state from existing file");
-            app.manage(crypto_state);
+            Some(crypto_state)
         }
         None => {
             log::info!("No crypto state is found. Setting first_launch = true");
             runtime_state.set_first_launch(true)?;
+            None
         }
-    }
+    };
 
+    app.manage(app_config);
     app.manage(runtime_state);
+    app.manage(item_state);
+    if let Some(crypto_state) = crypto_state {
+        app.manage(crypto_state);
+    }
 
     log::info!("Runing application");
     app.run(|_, _| {});
