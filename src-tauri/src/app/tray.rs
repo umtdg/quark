@@ -1,7 +1,9 @@
 use tauri::menu::{Menu, MenuEvent, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Runtime};
+use tauri::{AppHandle, Manager, Runtime, State};
 
+use crate::app::state::ItemState;
+use crate::commands::lock;
 use crate::error::Result;
 
 pub fn create_icon<M: Manager<R>, R: Runtime>(manager: &M) -> Result<TrayIcon<R>> {
@@ -19,29 +21,36 @@ pub fn create_icon<M: Manager<R>, R: Runtime>(manager: &M) -> Result<TrayIcon<R>
 }
 
 pub fn create_menu<M: Manager<R>, R: Runtime>(manager: &M) -> Result<Menu<R>> {
-    let quick_access_tray_item =
-        MenuItem::with_id(manager, "quick-access", "Quick Access", true, None::<&str>)?;
+    let quick_access_tray_item = MenuItem::with_id(manager, "show", "Show", true, None::<&str>)?;
+    let lock_tray_item = MenuItem::with_id(manager, "lock", "Lock", true, None::<&str>)?;
     let quit_tray_item = MenuItem::with_id(manager, "quit", "Quit", true, None::<&str>)?;
 
-    let tray_menu = Menu::with_items(manager, &[&quick_access_tray_item, &quit_tray_item])?;
+    let tray_menu = Menu::with_items(
+        manager,
+        &[&quick_access_tray_item, &lock_tray_item, &quit_tray_item],
+    )?;
 
     Ok(tray_menu)
 }
 
 fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
     match event.id.as_ref() {
-        "quick-access" => {
-            log::info!("Showing quick access through tray");
-            match app.get_webview_window("main") {
-                Some(window) => {
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
-                }
-                None => log::warn!("No main window to show"),
-            }
+        "show" => {
+            let window = app
+                .get_webview_window("main")
+                .expect("cannot find the main window. try to kill any dangling/zombie processes");
+
+            window.show().expect("error when showing main window");
+            window.set_focus().expect("error when focusing main window");
+        }
+        "lock" => {
+            let app_handle = app.clone();
+            let item_state: State<'_, ItemState> = app.state();
+
+            let _ =
+                tauri::async_runtime::block_on(async move { lock(app_handle, item_state).await });
         }
         "quit" => {
-            log::info!("Quitting through tray");
             app.exit(0);
         }
         _ => {

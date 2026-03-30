@@ -22,7 +22,7 @@ pub fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
     }
 }
 
-pub fn on_multiple_instance(app: &AppHandle, args: Vec<String>, _cwd: String) {
+pub fn on_multiple_instance<R: Runtime>(app: &AppHandle<R>, args: Vec<String>, _cwd: String) {
     log::debug!("App re-launched with args {:?}", args);
 
     let args = Cli::parse_from(args);
