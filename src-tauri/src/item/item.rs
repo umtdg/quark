@@ -2,12 +2,13 @@ use std::hash::Hash;
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::error::{Error, Result};
 use crate::item::content::ItemContent;
 use crate::serde::date;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Zeroize, ZeroizeOnDrop, Serialize)]
 pub struct Item {
     pub id: String,
     pub share_id: String,
@@ -15,9 +16,11 @@ pub struct Item {
     pub content: ItemContent,
 
     #[serde(with = "date")]
+    #[zeroize(skip)]
     pub create_time: DateTime<Utc>,
 
     #[serde(with = "date")]
+    #[zeroize(skip)]
     pub modify_time: DateTime<Utc>,
 }
 

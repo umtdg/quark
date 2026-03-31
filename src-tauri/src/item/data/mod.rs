@@ -5,8 +5,9 @@ pub use credit_card::ItemCreditCard;
 pub use login::ItemLogin;
 
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Zeroize, ZeroizeOnDrop)]
 pub enum ItemData {
     Login(ItemLogin),
     CreditCard(ItemCreditCard),

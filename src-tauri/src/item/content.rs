@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::item::data::ItemData;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Zeroize, ZeroizeOnDrop)]
 pub struct ItemContent {
     pub title: String,
     pub note: String,

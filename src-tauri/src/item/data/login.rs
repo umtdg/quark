@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Zeroize, ZeroizeOnDrop)]
 pub struct ItemLogin {
     pub email: String,
     pub username: String,

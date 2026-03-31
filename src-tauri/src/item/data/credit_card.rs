@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Zeroize, ZeroizeOnDrop)]
 pub struct ItemCreditCard {
     pub cardholder_name: String,
     pub card_type: String,
