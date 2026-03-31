@@ -13,7 +13,7 @@ use crate::app::config::AppConfig;
 use crate::app::state::{AppState, CryptoState, ItemState, RuntimeState};
 use crate::app::tray::create_icon;
 use crate::commands::{
-    copy_primary, get_items, init_crypto, is_first_launch, is_locked, lock, refresh_items, unlock,
+    copy_primary, copy_secondary, get_items, init_crypto, is_first_launch, is_locked, lock, refresh_items, unlock,
 };
 use crate::error::{Error, Result};
 use crate::handlers::{on_multiple_instance, on_window_event};
@@ -52,6 +52,7 @@ pub fn run() -> Result<()> {
         .on_window_event(on_window_event)
         .invoke_handler(tauri::generate_handler![
             copy_primary,
+            copy_secondary,
             refresh_items,
             get_items,
             init_crypto,

@@ -10,6 +10,7 @@ mod refresh_items;
 mod unlock;
 
 pub use copy_primary::copy_primary;
+pub use copy_secondary::copy_secondary;
 pub use get_items::get_items;
 pub use init_crypto::init_crypto;
 pub use is_first_launch::is_first_launch;
