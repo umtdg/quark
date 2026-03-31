@@ -21,7 +21,6 @@ export default function QuickAccess() {
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<ItemRef[]>([]);
   const [page, setPage] = useState(1);
-  const [pageCount, setPageCount] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const listRef = useRef(null);
@@ -39,6 +38,15 @@ export default function QuickAccess() {
       invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
         console.error("failed to copy primary:", reason);
       });
+    } else if (e.ctrlKey && e.key == "C") {
+      if (!selectedRef) {
+        console.info("No item is selected for copying");
+        return;
+      }
+
+      invoke("copy_secondary", { itemRef: selectedRef }).catch((reason) => {
+        console.error("failed to copy primary:", reason);
+      });
     }
   }
 
@@ -53,10 +61,9 @@ export default function QuickAccess() {
       },
       query: trimmedQuery,
     })
-      .then(({ items, total }) => {
+      .then(({ items }) => {
         setItems(items);
         setSelectedIndex(0);
-        setPageCount(Math.floor(total / PAGE_SIZE) + (total % PAGE_SIZE == 0 ? 0 : 1));
       })
       .catch((reason) => {
         console.error("failed to fetch items:", reason);
