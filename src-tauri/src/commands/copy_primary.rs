@@ -16,6 +16,8 @@ pub async fn copy_primary(
         Some(item) => {
             let secret = item.content.get_primary();
             app_handle.clipboard().write_secret(secret)?;
+
+            // TODO: hide the window here
         }
         None => {
             log::debug!(

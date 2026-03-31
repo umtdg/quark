@@ -1,9 +1,8 @@
 use tauri::menu::{Menu, MenuEvent, MenuItem};
 use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, Runtime, State};
+use tauri::{AppHandle, Manager, Runtime};
 
-use crate::app::state::ItemState;
-use crate::commands::lock;
+use crate::handlers::{show_window, lock_app};
 use crate::error::Result;
 
 pub fn create_icon<M: Manager<R>, R: Runtime>(manager: &M) -> Result<TrayIcon<R>> {
@@ -36,21 +35,14 @@ pub fn create_menu<M: Manager<R>, R: Runtime>(manager: &M) -> Result<Menu<R>> {
 fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
     match event.id.as_ref() {
         "show" => {
-            let window = app
-                .get_webview_window("main")
-                .expect("cannot find the main window. try to kill any dangling/zombie processes");
-
-            window.show().expect("error when showing main window");
-            window.set_focus().expect("error when focusing main window");
+            show_window(app).expect("failed to show main window");
         }
         "lock" => {
-            let app_handle = app.clone();
-            let item_state: State<'_, ItemState> = app.state();
-
-            let _ =
-                tauri::async_runtime::block_on(async move { lock(app_handle, item_state).await });
+            lock_app(app);
         }
         "quit" => {
+            log::info!("Quitting application");
+
             app.exit(0);
         }
         _ => {

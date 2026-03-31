@@ -41,6 +41,9 @@ pub enum Error {
 
     #[error("clipboard error")]
     Clipboard(#[from] tauri_plugin_clipboard_manager::Error),
+
+    #[error("{0}")]
+    ShowWindow(String)
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
