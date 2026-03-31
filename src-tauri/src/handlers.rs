@@ -1,24 +1,28 @@
 use clap::Parser;
-use tauri::{AppHandle, Manager, Runtime, State, Window, WindowEvent};
+use tauri::{AppHandle, Manager, Runtime, State, WebviewWindow, Window, WindowEvent};
 
 use crate::app::cli::{Cli, Command};
 use crate::app::state::ItemState;
 use crate::commands::lock;
 use crate::error::{Error, Result};
 
+pub fn get_main_window<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>> {
+    app.get_webview_window("main").ok_or(Error::Window(
+        "cannot find the main window, try to kill any dangling/zombie processes".into(),
+    ))
+}
+
 pub fn show_window<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
     log::info!("Showing and focusing main window");
 
-    let window = app.get_webview_window("main").ok_or(Error::ShowWindow(
-        "cannot find the main window, try to kill any dangling/zombie processes".into(),
-    ))?;
+    let window = get_main_window(app)?;
 
     window
         .show()
-        .map_err(|err| Error::ShowWindow(err.to_string()))?;
+        .map_err(|err| Error::Window(err.to_string()))?;
     window
         .set_focus()
-        .map_err(|err| Error::ShowWindow(err.to_string()))?;
+        .map_err(|err| Error::Window(err.to_string()))?;
 
     Ok(())
 }
@@ -53,7 +57,6 @@ pub fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
 pub fn on_multiple_instance<R: Runtime>(app: &AppHandle<R>, args: Vec<String>, _cwd: String) {
     log::debug!("App re-launched with args {:?}", args);
 
-    // TODO: these actions are the exact same as tray actions
     let args = Cli::parse_from(args);
     match args.command.unwrap_or(Command::Show) {
         Command::Show => {
