@@ -29,7 +29,17 @@ export default function QuickAccess() {
   const selectedRef: ItemRef | undefined = items[selectedIndex] ?? undefined;
 
   function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
-    console.info("pressed:", e.key);
+    if (e.ctrlKey && e.key == "c") {
+      if (!selectedRef) {
+        // TODO: better ux for informing user
+        console.info("No item is selected for copying");
+        return;
+      }
+
+      invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
+        console.error("failed to copy primary:", reason);
+      });
+    }
   }
 
   function getItems() {

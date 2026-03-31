@@ -40,3 +40,9 @@ impl Hash for ItemRef {
         self.share_id.hash(state);
     }
 }
+
+impl ItemRef {
+    pub fn composite_key(&self) -> String {
+        format!("{}/{}", self.share_id, self.id)
+    }
+}

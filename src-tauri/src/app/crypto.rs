@@ -32,6 +32,12 @@ impl KdfParams {
     }
 }
 
+impl Default for KdfParams {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EncryptedData {
     #[serde(with = "base64_serde")]
@@ -82,6 +88,12 @@ impl Dek {
     }
 }
 
+impl Default for Dek {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Debug for Dek {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("***")
@@ -112,7 +124,7 @@ impl Kek {
             Version::V0x13,
             params.to_argon2_params()?,
         )
-        .hash_password_into(password, &salt, &mut kek)?;
+        .hash_password_into(password, salt, &mut kek)?;
 
         Ok(Self(kek))
     }

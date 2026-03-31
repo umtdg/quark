@@ -37,7 +37,10 @@ pub enum Error {
     Locked,
 
     #[error("cannot convert vector to array: {0}")]
-    VectorArrayConversion(String)
+    VectorArrayConversion(String),
+
+    #[error("clipboard error")]
+    Clipboard(#[from] tauri_plugin_clipboard_manager::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

@@ -1,3 +1,6 @@
+mod copy_primary;
+mod copy_secondary;
+mod copy_alt;
 mod get_items;
 mod init_crypto;
 mod is_first_launch;
@@ -6,6 +9,7 @@ mod lock;
 mod refresh_items;
 mod unlock;
 
+pub use copy_primary::copy_primary;
 pub use get_items::get_items;
 pub use init_crypto::init_crypto;
 pub use is_first_launch::is_first_launch;

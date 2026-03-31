@@ -116,4 +116,26 @@ impl ItemState {
         log::trace!("Decrypted {} item(s)", decrypted_items.len());
         Ok(decrypted_items)
     }
+
+    pub fn get_by_ref(&self, item_ref: &ItemRef) -> Result<Option<Item>> {
+        log::trace!("Waiting items for read");
+        let items = self
+            .items
+            .read()
+            .map_err(|_| Error::TryLock("items".into()))?;
+
+        log::trace!("Waiting DEK for read");
+        let dek = self
+            .dek
+            .read()
+            .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
+        let key = &dek.as_ref().ok_or(Error::Locked)?.0;
+
+        let item = match items.get(&item_ref.composite_key()) {
+            Some(encrypted_item) => Some(encrypted_item.decrypt(key)?),
+            None => None,
+        };
+
+        Ok(item)
+    }
 }

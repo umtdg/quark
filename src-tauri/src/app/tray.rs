@@ -61,17 +61,14 @@ fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
 
 fn on_tray_icon_event<R: Runtime>(tray_icon: &TrayIcon<R>, event: TrayIconEvent) {
     // Doesn't seem to work on Linux and still shows the menu on left click
-    match event {
-        TrayIconEvent::Click { .. } => {
-            let app = tray_icon.app_handle();
-            match app.get_webview_window("main") {
-                Some(window) => {
-                    window.show().unwrap();
-                    window.set_focus().unwrap();
-                }
-                None => log::warn!("No main window to show"),
+    if let TrayIconEvent::Click { .. } = event {
+        let app = tray_icon.app_handle();
+        match app.get_webview_window("main") {
+            Some(window) => {
+                window.show().unwrap();
+                window.set_focus().unwrap();
             }
+            None => log::warn!("No main window to show"),
         }
-        _ => {}
     }
 }

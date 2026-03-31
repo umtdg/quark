@@ -19,7 +19,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = ["tray-icon"] }
-tauri-plugin-clipboard-manager = "2"
+tauri-plugin-clipboard-manager = { version = "2", path = "../../tauri-plugins/plugins/clipboard-manager/" }
 tauri-plugin-log = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-shell = "2.3.5"

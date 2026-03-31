@@ -16,7 +16,7 @@ impl ItemContent {
 
         match &self.content {
             ItemData::Login(item_login) => {
-                if item_login.username.len() > 0 {
+                if !item_login.username.is_empty() {
                     &item_login.username
                 } else {
                     &item_login.email
