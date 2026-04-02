@@ -41,7 +41,7 @@ jobs:
           [ "$MISMATCH" -eq 1 ] && exit 1
           echo "All versions match the tag $TAG"
 
-      - uses: .github/actions/setup
+      - uses: ./.github/actions/setup
         with:
           platform: ${{ matrix.platform }}
 
