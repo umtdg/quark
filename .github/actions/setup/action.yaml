@@ -34,5 +34,6 @@ runs:
         workspaces: './src-tauri -> target'
 
     - name: install frontend dependencies
+      shell: bash
       # no need for `pnpm build` as `beforeBuildCommand` is configured
       run: pnpm install
