@@ -25,6 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: get current date
+        id: date
+        shell: bash
+        run: echo "::set-output name=date::$(date '+%Y-%m-%d')"
+
       - uses: ./.github/actions/setup
         with:
           platform: ${{ matrix.platform }}
@@ -33,8 +38,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: rolling
-          releaseName: 'Quark Nightly'
+          tagName: nightly-${{ steps.date.outputs.date }}
+          releaseName: 'Quark Nightly ${{ steps.date.outputs.date }}'
           releaseBody: 'Automated nightly build from main'
           releaseDraft: false
           prerelease: true
