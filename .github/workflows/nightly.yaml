@@ -28,7 +28,7 @@ jobs:
       - name: get current date
         id: date
         shell: bash
-        run: echo "::set-output name=date::$(date '+%Y-%m-%d')"
+        run: echo "date=$(date '+%Y-%m-%d')" >> $GITHUB_OUTPUT
 
       - uses: ./.github/actions/setup
         with:
