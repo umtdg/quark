@@ -1,6 +1,6 @@
 [package]
 name = "quark"
-version = "0.1.0"
+version = "0.1.2"
 description = "Quick access for Proton Pass using pass-cli"
 authors = ["me@umtdg.com <Umut Dag>"]
 edition = "2021"
