@@ -4789,6 +4789,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-clipboard-manager"
 version = "2.3.2"
+source = "git+https://github.com/umtdg/plugins-workspace?branch=feat-clipboard-exclude#cc8b2ede19e7f6746b200a80a26dc3eb094b9add"
 dependencies = [
  "arboard",
  "log",
