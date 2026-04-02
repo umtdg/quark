@@ -33,7 +33,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: nightly
+          tagName: rolling
           releaseName: 'Quark Nightly'
           releaseBody: 'Automated nightly build from main'
           releaseDraft: false
