@@ -66,7 +66,7 @@ export default function Setup() {
         type="submit"
         aria-busy={creating}
         disabled={creating}
-        className="w-40 p-2 bg-button text-primary active:border-primary active:ring-primary rounded-lg cursor-pointer hover:bg-button-hover"
+        className="w-40 p-2 bg-button text-primary inline-flex items-center justify-center active:border-primary active:ring-primary rounded-lg cursor-pointer hover:bg-button-hover"
       >
         {creating ? <Refresh className="w-5 h-5 fill-primary animate-spin" /> : "Set-up"}
       </button>
