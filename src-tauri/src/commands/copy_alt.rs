@@ -2,12 +2,7 @@ use tauri::{AppHandle, State};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use zeroize::Zeroize;
 
-use crate::{
-    app::state::ItemState,
-    error::{Error, Result},
-    handlers::get_main_window,
-    item::ItemRef,
-};
+use crate::{app::state::ItemState, error::Result, handlers::hide_window, item::ItemRef};
 
 #[tauri::command]
 pub async fn copy_alt(
@@ -21,10 +16,7 @@ pub async fn copy_alt(
             let mut secret = item.content.get_alt();
             app_handle.clipboard().write_secret(&secret)?;
 
-            let window = get_main_window(&app_handle)?;
-            window
-                .hide()
-                .map_err(|err| Error::Window(err.to_string()))?;
+            hide_window(&app_handle)?;
 
             // get_alt returns String instead of &str
             secret.zeroize();
