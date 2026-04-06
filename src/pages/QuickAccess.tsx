@@ -35,9 +35,15 @@ export default function QuickAccess() {
         return;
       }
 
-      invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
-        console.error("failed to copy primary:", reason);
-      });
+      if (e.altKey) {
+        invoke("copy_alt", { itemRef: selectedRef }).catch((reason) => {
+          console.error("failed to copy primary", reason);
+        });
+      } else {
+        invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
+          console.error("failed to copy primary:", reason);
+        });
+      }
     } else if (e.ctrlKey && e.key == "C") {
       if (!selectedRef) {
         console.info("No item is selected for copying");
