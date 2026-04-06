@@ -99,6 +99,10 @@ export default function QuickAccess() {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
+            if (e.target.value.trim().length === 0) {
+              setItems([]);
+              setSelectedIndex(0);
+            }
           }}
           placeholder="Search"
           className="flex-1 px-3 py-2 border border-text/20 rounded-lg placeholder-text/50 focus:outline-none focus:ring-2 focus:ring-text/30"
