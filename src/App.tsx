@@ -10,8 +10,6 @@ export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
 
   function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
-    console.log("Got key: ", e.key);
-
     if (e.key == "Escape") {
       const currentWindow = getCurrentWindow();
       currentWindow.hide();
@@ -25,7 +23,12 @@ export default function App() {
 
   useEffect(checkState, []);
 
-  listen("state-changed", checkState);
+  useEffect(() => {
+    const unlisten = listen("state-changed", checkState);
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  });
 
   return (
     <div
