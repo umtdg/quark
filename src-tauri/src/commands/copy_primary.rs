@@ -2,8 +2,8 @@ use tauri::{AppHandle, State};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::app::state::ItemState;
-use crate::error::{Error, Result};
-use crate::handlers::get_main_window;
+use crate::error::Result;
+use crate::handlers::hide_window;
 use crate::item::ItemRef;
 
 #[tauri::command]
@@ -18,10 +18,7 @@ pub async fn copy_primary(
             let secret = item.content.get_primary();
             app_handle.clipboard().write_secret(secret)?;
 
-            let window = get_main_window(&app_handle)?;
-            window
-                .hide()
-                .map_err(|err| Error::Window(err.to_string()))?;
+            hide_window(&app_handle)?;
         }
         None => {
             log::debug!(

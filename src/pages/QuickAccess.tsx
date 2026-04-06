@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
-import { Refresh, Lock } from "../components";
+import { Alert, AlertKind, Refresh, Lock } from "../components";
+import useWindowFocus from "../hooks/useWindowFocus";
 
 interface ItemRef {
   id: string;
@@ -15,35 +16,47 @@ export default function QuickAccess() {
   const [items, setItems] = useState<ItemRef[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+
+  const [message, setMessage] = useState<{ kind: AlertKind; text: string } | undefined>(
+    undefined,
+  );
+
+  const searchRef = useWindowFocus<HTMLInputElement>();
   const listRef = useRef(null);
 
   const selectedRef: ItemRef | undefined = items[selectedIndex] ?? undefined;
 
+  function setError(reason: unknown, fallback: string) {
+    const text = typeof reason === "string" ? reason : fallback;
+    setMessage({ kind: "error", text });
+  }
+
   function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
     if (e.ctrlKey && e.key == "c") {
       if (!selectedRef) {
-        // TODO: better ux for informing user
-        console.info("No item is selected for copying");
+        setMessage({ kind: "info", text: "No item is selected" });
         return;
       }
 
+      setMessage(undefined);
       if (e.altKey) {
         invoke("copy_alt", { itemRef: selectedRef }).catch((reason) => {
-          console.error("failed to copy primary", reason);
+          setError(reason, "Failed to copy alt value");
         });
       } else {
         invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
-          console.error("failed to copy primary:", reason);
+          setError(reason, "Failed to copy primary value");
         });
       }
     } else if (e.ctrlKey && e.key == "C") {
       if (!selectedRef) {
-        console.info("No item is selected for copying");
+        setMessage({ kind: "info", text: "No item is selected" });
         return;
       }
 
+      setMessage(undefined);
       invoke("copy_secondary", { itemRef: selectedRef }).catch((reason) => {
-        console.error("failed to copy primary:", reason);
+        setError(reason, "Failed to copy secondary value");
       });
     }
   }
@@ -58,30 +71,27 @@ export default function QuickAccess() {
         setSelectedIndex(0);
       })
       .catch((reason) => {
-        console.error("failed to fetch items:", reason);
+        setError(reason, "Failed to fetch items");
       });
   }
 
   function refreshItems() {
     setRefreshing(true);
+    setMessage(undefined);
     invoke("refresh_items")
       .then(() => {
         setRefreshing(false);
       })
       .catch((reason) => {
-        console.error("error when refreshing items:", reason);
+        setError(reason, "Failed to refresh items");
         setRefreshing(false);
       });
   }
 
   function lock() {
-    invoke("lock")
-      .then(() => {
-        console.log("Locked successfully");
-      })
-      .catch((reason) => {
-        console.log("Failed to lock:", reason);
-      });
+    invoke("lock").catch((reason) => {
+      setError(reason, "Failed to lock");
+    });
   }
 
   useEffect(getItems, [query]);
@@ -90,15 +100,20 @@ export default function QuickAccess() {
     <div
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="flex flex-col h-full w-full px-2 outline-none"
+      className="flex flex-col h-full w-full p-2 outline-none"
     >
       <div className="flex flex-row gap-2 p-2">
         <input
           autoFocus
+          ref={searchRef}
           type="text"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
+            if (e.target.value.trim().length === 0) {
+              setItems([]);
+              setSelectedIndex(0);
+            }
           }}
           placeholder="Search"
           className="flex-1 px-3 py-2 border border-text/20 rounded-lg placeholder-text/50 focus:outline-none focus:ring-2 focus:ring-text/30"
@@ -136,6 +151,10 @@ export default function QuickAccess() {
           );
         })}
       </ul>
+
+      {message && (
+        <Alert kind={message.kind} text={message.text} onExpire={() => setMessage(undefined)} />
+      )}
     </div>
   );
 }

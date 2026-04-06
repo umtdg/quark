@@ -22,9 +22,15 @@ pub fn show_window<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
         .map_err(|err| Error::Window(err.to_string()))?;
     window
         .set_focus()
-        .map_err(|err| Error::Window(err.to_string()))?;
+        .map_err(|err| Error::Window(err.to_string()))
+}
 
-    Ok(())
+pub fn hide_window<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
+    log::info!("Hiding window");
+
+    let window = get_main_window(app)?;
+
+    window.hide().map_err(|err| Error::Window(err.to_string()))
 }
 
 pub fn lock_app<R: Runtime>(app: &AppHandle<R>) {
