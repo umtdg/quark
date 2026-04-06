@@ -92,7 +92,7 @@ export default function QuickAccess() {
     <div
       tabIndex={-1}
       onKeyDown={handleKeyDown}
-      className="flex flex-col h-full w-full px-2 outline-none"
+      className="flex flex-col h-full w-full p-2 outline-none"
     >
       <div className="flex flex-row gap-2 p-2">
         <input
