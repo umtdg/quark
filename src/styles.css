@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@keyframes slideUp {
+    from { transform: translateY(200%); }
+    to { transform: translateY(0); }
+}
+
 @theme {
     --color-bg: #1f1f31;
     --color-primary: #caaaff;
@@ -8,4 +13,6 @@
     --color-text: #e9e9ea;
     --color-ok: #4ab89a;
     --color-alert: #4ab89a;
+
+    --animate-slide-up: slideUp 0.5s ease-out;
 }
