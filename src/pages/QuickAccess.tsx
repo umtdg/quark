@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 import { Refresh, Lock } from "../components";
+import useWindowFocus from "../hooks/useWindowFocus";
 
 interface ItemRef {
   id: string;
@@ -15,6 +16,7 @@ export default function QuickAccess() {
   const [items, setItems] = useState<ItemRef[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const searchRef = useWindowFocus<HTMLInputElement>();
   const listRef = useRef(null);
 
   const selectedRef: ItemRef | undefined = items[selectedIndex] ?? undefined;
@@ -95,6 +97,7 @@ export default function QuickAccess() {
       <div className="flex flex-row gap-2 p-2">
         <input
           autoFocus
+          ref={searchRef}
           type="text"
           value={query}
           onChange={(e) => {

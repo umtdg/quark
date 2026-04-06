@@ -2,10 +2,12 @@ import { invoke } from "@tauri-apps/api/core";
 import * as log from "@tauri-apps/plugin-log";
 import { ArrowForward, Refresh } from "../components";
 import { useState } from "react";
+import useWindowFocus from "../hooks/useWindowFocus";
 
 export default function LockScreen() {
   const [password, setPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
+  const passwordRef = useWindowFocus<HTMLInputElement>();
 
   async function unlock(e: React.SubmitEvent<HTMLFormElement>) {
     try {
@@ -29,6 +31,7 @@ export default function LockScreen() {
       >
         <input
           autoFocus
+          ref={passwordRef}
           type="password"
           placeholder={"Enter your password to unlock"}
           value={password}

@@ -2,11 +2,13 @@ import { invoke } from "@tauri-apps/api/core";
 import * as log from "@tauri-apps/plugin-log";
 import React, { useState } from "react";
 import { Refresh } from "../components";
+import useWindowFocus from "../hooks/useWindowFocus";
 
 export default function Setup() {
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
   const [creating, setCreating] = useState(false);
+  const passwordRef = useWindowFocus<HTMLInputElement>();
 
   const passwordMatch = password.length > 0 && password === passwordRepeat;
 
@@ -38,6 +40,7 @@ export default function Setup() {
       <h1 className="font-bold">Set a password</h1>
       <input
         autoFocus
+        ref={passwordRef}
         tabIndex={1}
         type="password"
         placeholder={"Type password"}
