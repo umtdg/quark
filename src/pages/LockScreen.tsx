@@ -7,7 +7,11 @@ import useWindowFocus from "../hooks/useWindowFocus";
 export default function LockScreen() {
   const [password, setPassword] = useState("");
   const [unlocking, setUnlocking] = useState(false);
-  const passwordRef = useWindowFocus<HTMLInputElement>();
+
+  function onHide() {
+    setPassword("");
+  }
+  const passwordRef = useWindowFocus<HTMLInputElement>(onHide);
 
   async function unlock(e: React.SubmitEvent<HTMLFormElement>) {
     try {

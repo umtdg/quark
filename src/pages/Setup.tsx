@@ -8,9 +8,14 @@ export default function Setup() {
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
   const [creating, setCreating] = useState(false);
-  const passwordRef = useWindowFocus<HTMLInputElement>();
 
   const passwordMatch = password.length > 0 && password === passwordRepeat;
+
+  function onHide() {
+    setPassword("");
+    setPasswordRepeat("");
+  }
+  const passwordRef = useWindowFocus<HTMLInputElement>(onHide);
 
   async function initCrypto(e: React.SubmitEvent<HTMLFormElement>) {
     if (password.length === 0) {
