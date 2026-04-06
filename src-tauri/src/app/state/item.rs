@@ -92,7 +92,7 @@ impl ItemState {
         Ok(())
     }
 
-    pub fn get_decrypted_item_refs(&self) -> Result<HashSet<ItemRef>> {
+    pub fn get_decrypted_item_refs(&self) -> Result<Vec<ItemRef>> {
         log::trace!("Waiting items for read");
         let items = self
             .items
@@ -107,10 +107,10 @@ impl ItemState {
         let key = &dek.as_ref().ok_or(Error::Locked)?.0;
 
         log::trace!("Decrypting items and mapping them to refs");
-        let mut decrypted_items = HashSet::with_capacity(items.capacity());
+        let mut decrypted_items = Vec::with_capacity(items.capacity());
         for (item_id, item) in items.iter() {
             log::trace!("Decrypting item {}", item_id);
-            decrypted_items.insert(item.decrypt::<Item>(key)?.into());
+            decrypted_items.push(item.decrypt::<Item>(key)?.into());
         }
 
         log::trace!("Decrypted {} item(s)", decrypted_items.len());

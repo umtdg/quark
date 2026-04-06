@@ -10,17 +10,9 @@ interface ItemRef {
   itype: string;
 }
 
-interface PageResult<T> {
-  items: T[];
-  total: number;
-}
-
 export default function QuickAccess() {
-  const PAGE_SIZE = 25;
-
   const [query, setQuery] = useState("");
   const [items, setItems] = useState<ItemRef[]>([]);
-  const [page, setPage] = useState(1);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const listRef = useRef(null);
@@ -57,17 +49,11 @@ export default function QuickAccess() {
   }
 
   function getItems() {
-    const trimmedQuery = query.trim().toLowerCase();
+    const trimmedQuery = query.trim();
     if (trimmedQuery.length === 0) return;
 
-    invoke<PageResult<ItemRef>>("get_items", {
-      pagination: {
-        offset: (page - 1) * PAGE_SIZE,
-        limit: PAGE_SIZE,
-      },
-      query: trimmedQuery,
-    })
-      .then(({ items }) => {
+    invoke<ItemRef[]>("get_items", { query: trimmedQuery })
+      .then((items) => {
         setItems(items);
         setSelectedIndex(0);
       })
@@ -98,7 +84,7 @@ export default function QuickAccess() {
       });
   }
 
-  useEffect(getItems, [query, page]);
+  useEffect(getItems, [query]);
 
   return (
     <div
@@ -113,7 +99,6 @@ export default function QuickAccess() {
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setPage(1);
           }}
           placeholder="Search"
           className="flex-1 px-3 py-2 border border-text/20 rounded-lg placeholder-text/50 focus:outline-none focus:ring-2 focus:ring-text/30"
