@@ -50,8 +50,11 @@ pub enum Error {
     #[error("Clipboard error: {0}")]
     Clipboard(#[from] tauri_plugin_clipboard_manager::Error),
 
-    #[error("{0}")]
+    #[error("Window error: {0}")]
     Window(String),
+
+    #[error("TOTP error: {0}")]
+    Totp(String),
 }
 
 impl serde::Serialize for Error {

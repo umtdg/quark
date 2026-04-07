@@ -4,11 +4,37 @@ import { invoke } from "@tauri-apps/api/core";
 import { Alert, AlertKind, Refresh, Lock } from "../components";
 import useWindowFocus from "../hooks/useWindowFocus";
 
+interface ItemRefLogin {
+  type: "login";
+  login: string;
+  urls: string[];
+}
+
+interface ItemRefCreditCard {
+  type: "credit_card";
+  masked_number: string;
+}
+
+type ItemRefData = ItemRefLogin | ItemRefCreditCard;
+
 interface ItemRef {
   id: string;
   shareId: string;
   title: string;
-  itype: string;
+  data: ItemRefData;
+}
+
+function getItemInfo(itemRef: ItemRef): string {
+  switch (itemRef.data.type) {
+    case "login":
+      if (itemRef.data.urls.length > 0) {
+        return `${itemRef.data.login} - ${itemRef.data.urls.join("-")}`;
+      } else {
+        return itemRef.data.login;
+      }
+    case "credit_card":
+      return itemRef.data.masked_number;
+  }
 }
 
 export default function QuickAccess() {
@@ -17,9 +43,7 @@ export default function QuickAccess() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [message, setMessage] = useState<{ kind: AlertKind; text: string } | undefined>(
-    undefined,
-  );
+  const [message, setMessage] = useState<{ kind: AlertKind; text: string } | undefined>(undefined);
 
   const searchRef = useWindowFocus<HTMLInputElement>();
   const listRef = useRef(null);
@@ -146,7 +170,7 @@ export default function QuickAccess() {
               }
             >
               <div className="text-sm font-medium">{item.title}</div>
-              <div className="text-xs text-text/50">{item.itype}</div>
+              <div className="text-xs text-text/50">{getItemInfo(item)}</div>
             </li>
           );
         })}
