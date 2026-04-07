@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error(transparent)]
+    #[error("JSON serialization/deserialization error: {0}")]
     Json(#[from] serde_json::Error),
 
     #[error("Cannot execute command: {0}")]
@@ -12,40 +14,40 @@ pub enum Error {
     #[error("pass-cli is not authenticated. Run `pass-cli login` and try again")]
     PassCliAuth,
 
-    #[error("current platform may not be supported")]
-    PlatformNotSupported,
-
-    #[error(transparent)]
-    Config(#[from] config::ConfigError),
-
-    #[error(transparent)]
+    #[error("Crypto error: {0}")]
     Encryption(#[from] aes_gcm::Error),
 
-    #[error(transparent)]
+    #[error("Hash error: {0}")]
     Hash(#[from] argon2::Error),
 
-    #[error("error when decoding decrypted data")]
-    Decoding,
+    #[error("Invalid key derivation function parameters: {0}")]
+    InvalidKdfParams(String),
 
-    #[error("error decoding string as utf-8")]
-    Utf8(#[from] std::string::FromUtf8Error),
+    #[error("Decode error: {0}")]
+    Decode(String),
 
-    #[error(transparent)]
+    #[error("Incorrect password")]
+    IncorrectPassword,
+
+    #[error("Platform is not supported")]
+    PlatformNotSupported,
+
+    #[error("Configuration error: {0}")]
+    Config(#[from] config::ConfigError),
+
+    #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
-    #[error(transparent)]
-    Tauri(#[from] tauri::Error),
-
-    #[error("error when locking mutex for {0}")]
+    #[error("Error when locking mutex for {0}")]
     TryLock(String),
 
     #[error("Application is locked")]
     Locked,
 
-    #[error("cannot convert vector to array: {0}")]
-    VectorArrayConversion(String),
+    #[error("Tauri error: {0}")]
+    Tauri(#[from] tauri::Error),
 
-    #[error(transparent)]
+    #[error("Clipboard error: {0}")]
     Clipboard(#[from] tauri_plugin_clipboard_manager::Error),
 
     #[error("{0}")]
@@ -58,6 +60,16 @@ impl serde::Serialize for Error {
         S: serde::Serializer,
     {
         serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl Error {
+    pub fn decode_error<T>(error: T::Error) -> Self
+    where
+        T: TryFrom<Vec<u8>>,
+        T::Error: Debug,
+    {
+        Error::Decode(format!("{:?}", error))
     }
 }
 
