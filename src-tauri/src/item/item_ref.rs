@@ -5,11 +5,36 @@ use serde::{Deserialize, Serialize};
 use crate::item::{Item, ItemData};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "type", rename_all = "snake_case")]
+pub enum ItemRefData {
+    Login { login: String, urls: Vec<String> },
+    CreditCard { masked_number: String },
+}
+
+impl From<&ItemData> for ItemRefData {
+    fn from(value: &ItemData) -> Self {
+        match value {
+            ItemData::Login(item_login) => ItemRefData::Login {
+                login: item_login.get_login().to_string(),
+                urls: item_login.urls.clone(),
+            },
+            ItemData::CreditCard(item_credit_card) => ItemRefData::CreditCard {
+                masked_number: format!(
+                    "{} **** {}",
+                    &item_credit_card.number[0..4],
+                    &item_credit_card.number[12..16]
+                ),
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct ItemRef {
     pub id: String,
     pub share_id: String,
     pub title: String,
-    pub itype: String,
+    pub data: ItemRefData,
 }
 
 impl From<Item> for ItemRef {
@@ -18,10 +43,7 @@ impl From<Item> for ItemRef {
             id: value.id.clone(),
             share_id: value.share_id.clone(),
             title: value.content.title.clone(),
-            itype: match value.content.content {
-                ItemData::Login(_) => "Login".into(),
-                ItemData::CreditCard(_) => "CreditCard".into(),
-            },
+            data: (&value.content.content).into(),
         }
     }
 }
