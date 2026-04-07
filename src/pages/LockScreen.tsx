@@ -25,7 +25,7 @@ export default function LockScreen() {
       log.debug("Unlocked successfully");
     } catch (reason) {
       log.error(`Error when unlocking: ${reason}`);
-      setError("Incorrect password");
+      setError(typeof reason === "string" ? reason : "Incorrect password");
     } finally {
       setUnlocking(false);
     }
