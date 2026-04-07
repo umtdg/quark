@@ -2,10 +2,11 @@ use std::collections::HashSet;
 use std::ffi::OsStr;
 
 use serde::Deserialize;
-use tauri::{Manager, Runtime};
+use serde::de::DeserializeOwned;
+use tauri::{AppHandle, Runtime};
 use tauri_plugin_shell::ShellExt;
 
-use crate::error::Result;
+use crate::error::{Error, Result};
 use crate::item::{Item, Vault};
 
 #[derive(Debug, Deserialize)]
@@ -18,39 +19,61 @@ struct ItemsOutput {
     items: HashSet<Item>,
 }
 
-pub async fn get_vaults<T: Manager<R>, R: Runtime, P: AsRef<OsStr>>(
-    app_handle: T,
-    pass_cli_path: P,
+async fn run_pass_cli<O, R, I, S>(app: &AppHandle<R>, path: &str, args: I) -> Result<O>
+where
+    O: DeserializeOwned,
+    R: Runtime,
+    I: IntoIterator<Item = S>,
+    S: AsRef<OsStr>,
+{
+    let output = app
+        .shell()
+        .command(path)
+        .args(args)
+        .output()
+        .await
+        .map_err(|shell_error| match &shell_error {
+            tauri_plugin_shell::Error::Io(error) => match error.kind() {
+                std::io::ErrorKind::NotFound => Error::PassCliNotFound {
+                    path: path.to_string(),
+                },
+                _ => shell_error.into(),
+            },
+            _ => shell_error.into(),
+        })?;
+
+    if !output.status.success() {
+        return Err(Error::PassCliAuth);
+    }
+
+    let json: O = serde_json::from_slice(&output.stdout)?;
+
+    Ok(json)
+}
+
+pub async fn get_vaults<R: Runtime>(
+    app: &AppHandle<R>,
+    pass_cli_path: &str,
 ) -> Result<HashSet<Vault>> {
     log::debug!("Getting vaults from pass-cli");
 
-    let shell = app_handle.shell();
-    let output = shell
-        .command(pass_cli_path)
-        .args(["vault", "list", "--output", "json"])
-        .output()
-        .await?;
+    let output: VaultListOutput =
+        run_pass_cli(app, pass_cli_path, ["vault", "list", "--output", "json"]).await?;
 
-    log::trace!("Decoding pass-cli stdout");
-    let stdout = String::from_utf8(output.stdout)?;
-
-    log::trace!("Parsing pass-cli output as JSON");
-    let json: VaultListOutput = serde_json::from_str(&stdout)?;
-
-    Ok(json.vaults)
+    Ok(output.vaults)
 }
 
-pub async fn get_vault_items<T: Manager<R>, R: Runtime, P: AsRef<OsStr>>(
-    app_handle: T,
-    pass_cli_path: P,
+pub async fn get_vault_items<R: Runtime>(
+    app: &AppHandle<R>,
+    pass_cli_path: &str,
     share_id: &str,
 ) -> Result<HashSet<Item>> {
     log::debug!("Getting items from pass-cli for share {}", share_id);
 
-    let shell = app_handle.shell();
-    let output = shell
-        .command(pass_cli_path)
-        .args([
+    let output: ItemsOutput = run_pass_cli(
+        app,
+        pass_cli_path,
+        [
             "item",
             "list",
             "--share-id",
@@ -59,15 +82,9 @@ pub async fn get_vault_items<T: Manager<R>, R: Runtime, P: AsRef<OsStr>>(
             "json",
             "--filter-type",
             "login",
-        ])
-        .output()
-        .await?;
+        ],
+    )
+    .await?;
 
-    log::trace!("Decoding pass-cli stdout");
-    let stdout = String::from_utf8(output.stdout)?;
-
-    log::trace!("Parsing pass-cli output as JSON");
-    let json: ItemsOutput = serde_json::from_str(&stdout)?;
-
-    Ok(json.items)
+    Ok(output.items)
 }

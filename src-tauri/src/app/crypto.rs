@@ -28,7 +28,8 @@ impl KdfParams {
     }
 
     pub fn to_argon2_params(&self) -> Result<Params> {
-        Params::new(self.m_cost, self.t_cost, self.p_cost, Some(32)).map_err(Into::into)
+        Params::new(self.m_cost, self.t_cost, self.p_cost, Some(32))
+            .map_err(|err| Error::InvalidKdfParams(err.to_string()))
     }
 }
 
@@ -59,12 +60,20 @@ impl EncryptedData {
         })
     }
 
-    pub fn decrypt<T: TryFrom<Vec<u8>>>(&self, key: &[u8]) -> Result<T> {
+    pub fn decrypt<T>(&self, key: &[u8]) -> Result<T>
+    where
+        T: TryFrom<Vec<u8>>,
+        T::Error: Debug,
+    {
         let nonce = Nonce::from_slice(&self.nonce);
         let aes256_gcm = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
-        let plaintext = aes256_gcm.decrypt(nonce, self.data.as_ref())?;
+        let plaintext = aes256_gcm
+            .decrypt(nonce, self.data.as_ref())
+            .map_err(|_| Error::IncorrectPassword)?;
 
-        plaintext.try_into().map_err(|_| Error::Decoding)
+        plaintext
+            .try_into()
+            .map_err(|err| Error::decode_error::<T>(err))
     }
 }
 
@@ -101,12 +110,17 @@ impl Debug for Dek {
 }
 
 impl TryFrom<Vec<u8>> for Dek {
-    type Error = crate::Error;
+    type Error = String;
 
     fn try_from(value: Vec<u8>) -> std::result::Result<Self, Self::Error> {
-        let dek: [u8; 32] = value.try_into().map_err(|_| {
-            Error::VectorArrayConversion("vector for DEK must have exactly 32 items".into())
-        })?;
+        if value.len() != 32 {
+            return Err("Cannot decode bytes of length {} as DEK".into());
+        }
+
+        let mut dek = [0u8; 32];
+        for (index, byte) in value.iter().enumerate() {
+            dek[index] = *byte;
+        }
 
         Ok(Self(dek))
     }

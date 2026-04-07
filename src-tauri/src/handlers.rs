@@ -8,7 +8,7 @@ use crate::error::{Error, Result};
 
 pub fn get_main_window<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>> {
     app.get_webview_window("main").ok_or(Error::Window(
-        "cannot find the main window, try to kill any dangling/zombie processes".into(),
+        "Cannot find the main window. Try to kill any dangling processes".into(),
     ))
 }
 
@@ -52,7 +52,7 @@ pub fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
             api.prevent_close();
         }
         WindowEvent::Focused(false) => {
-            log::debug!("Window lost focus, hiding to system tray");
+            log::debug!("Window lost focus, hiding");
 
             window.hide().unwrap();
         }
