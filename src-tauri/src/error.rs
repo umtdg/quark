@@ -1,52 +1,56 @@
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("error when serializing/deserializing data")]
+    #[error(transparent)]
     Json(#[from] serde_json::Error),
+
+    #[error("Cannot execute command: {0}")]
+    Shell(#[from] tauri_plugin_shell::Error),
+
+    #[error("Cannot find pass-cli at '{path}'")]
+    PassCliNotFound { path: String },
+
+    #[error("pass-cli is not authenticated. Run `pass-cli login` and try again")]
+    PassCliAuth,
 
     #[error("current platform may not be supported")]
     PlatformNotSupported,
 
-    #[error("error when loading configuration")]
+    #[error(transparent)]
     Config(#[from] config::ConfigError),
 
-    #[error("encryption error: {0}")]
+    #[error(transparent)]
     Encryption(#[from] aes_gcm::Error),
 
-    #[error("hashing error")]
+    #[error(transparent)]
     Hash(#[from] argon2::Error),
 
     #[error("error when decoding decrypted data")]
     Decoding,
 
-    #[error("error running shell command")]
-    Shell(#[from] tauri_plugin_shell::Error),
-
     #[error("error decoding string as utf-8")]
     Utf8(#[from] std::string::FromUtf8Error),
 
-    #[error("io error")]
+    #[error(transparent)]
     Io(#[from] std::io::Error),
 
-    #[error("tauri error")]
+    #[error(transparent)]
     Tauri(#[from] tauri::Error),
 
     #[error("error when locking mutex for {0}")]
     TryLock(String),
 
-    #[error("data-encryption-key must be unlocked")]
+    #[error("Application is locked")]
     Locked,
 
     #[error("cannot convert vector to array: {0}")]
     VectorArrayConversion(String),
 
-    #[error("clipboard error")]
+    #[error(transparent)]
     Clipboard(#[from] tauri_plugin_clipboard_manager::Error),
 
     #[error("{0}")]
     Window(String),
 }
-
-pub type Result<T> = std::result::Result<T, Error>;
 
 impl serde::Serialize for Error {
     fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
@@ -56,3 +60,5 @@ impl serde::Serialize for Error {
         serializer.serialize_str(&self.to_string())
     }
 }
+
+pub type Result<T> = core::result::Result<T, Error>;
