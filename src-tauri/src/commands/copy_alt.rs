@@ -13,7 +13,7 @@ pub async fn copy_alt(
     let item = item_state.get_by_ref(&item_ref)?;
     match item {
         Some(item) => {
-            let mut secret = item.content.get_alt();
+            let mut secret = item.content.get_alt()?;
             app_handle.clipboard().write_secret(&secret)?;
 
             hide_window(&app_handle)?;

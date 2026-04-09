@@ -15,7 +15,7 @@ pub async fn copy_primary(
     let item = item_state.get_by_ref(&item_ref)?;
     match item {
         Some(item) => {
-            let secret = item.content.get_primary();
+            let secret = item.content.get_primary()?;
             app_handle.clipboard().write_secret(secret)?;
 
             hide_window(&app_handle)?;
