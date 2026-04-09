@@ -67,10 +67,12 @@ pub fn run() -> Result<()> {
     let app = builder.build(context)?;
     let app_handle = app.handle();
 
-    if cli.command.is_none_or(|command| command != app::cli::Command::Show) {
+    if cli.command.unwrap_or(app::cli::Command::Show) != app::cli::Command::Show {
         eprintln!("There is no instance of the application running");
         return Ok(());
     }
+
+    log::info!("Launching application with config: {:?}", app_config);
 
     let _tray_icon = create_icon(app_handle)?;
 

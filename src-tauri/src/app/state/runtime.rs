@@ -1,11 +1,19 @@
-use std::{path::PathBuf, sync::RwLock};
+use std::path::PathBuf;
+use std::sync::{Mutex, RwLock};
+use std::time::Duration;
+
+use tauri::{AppHandle, Runtime};
+use tokio::task::JoinHandle;
+use tokio::time::sleep;
 
 use crate::error::{Error, Result};
+use crate::handlers::clear_clipboard;
 
 pub struct RuntimeState {
     pub first_launch: RwLock<bool>,
     pub data_dir: PathBuf,
     pub config_dir: PathBuf,
+    pub clear_clipboard_handle: Mutex<Option<JoinHandle<()>>>,
 }
 
 impl RuntimeState {
@@ -21,6 +29,7 @@ impl RuntimeState {
             first_launch: RwLock::new(first_launch),
             data_dir,
             config_dir,
+            clear_clipboard_handle: Mutex::new(None),
         })
     }
 
@@ -44,5 +53,32 @@ impl RuntimeState {
             .map_err(|_| Error::TryLock("data-encryption-key".into()))?;
 
         Ok(*first_launch)
+    }
+
+    pub fn reset_clear_clipboard_handler<R: Runtime>(
+        &self,
+        app: &AppHandle<R>,
+        clear_interval: Duration,
+    ) -> Result<()> {
+        log::debug!("Waiting clear_clipboard_handle for lock");
+        let mut handle = self
+            .clear_clipboard_handle
+            .lock()
+            .map_err(|_| Error::TryLock("clear clipboard handle".into()))?;
+
+        if let Some(handle) = handle.take() {
+            log::debug!("Abort existing handler for clearing clipboard");
+            handle.abort();
+        }
+
+        let app_clone = app.clone();
+        *handle = Some(tokio::spawn(async move {
+            sleep(clear_interval).await;
+            if let Err(err) = clear_clipboard(&app_clone) {
+                log::error!("Failed to clear clipboard: {}", err);
+            }
+        }));
+
+        Ok(())
     }
 }
