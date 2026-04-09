@@ -15,7 +15,7 @@ pub struct ItemLogin {
 
 impl ItemLogin {
     pub fn get_login(&self) -> &str {
-        if self.username.len() > 0 {
+        if !self.username.is_empty() {
             &self.username
         } else {
             &self.email
@@ -23,7 +23,9 @@ impl ItemLogin {
     }
 
     pub fn get_totp_code(&self) -> Result<String> {
-        let totp = TOTP::from_url(&self.totp_uri).map_err(|err| Error::Totp(err.to_string()))?;
+        // `from_url` doesn't work with providers like Discord that have key length of 80 instead
+        // of 128. `from_url_unchecked` bypasses this requirement
+        let totp = TOTP::from_url_unchecked(&self.totp_uri).map_err(|err| Error::Totp(err.to_string()))?;
         totp.generate_current()
             .map_err(|err| Error::Totp(err.to_string()))
     }
