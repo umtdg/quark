@@ -56,32 +56,38 @@ export default function QuickAccess() {
   }
 
   function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
-    if (e.ctrlKey && e.key == "c") {
-      if (!selectedRef) {
-        setMessage({ kind: "info", text: "No item is selected" });
-        return;
-      }
+    if (e.ctrlKey) {
+      if (e.key == "c") {
+        if (!selectedRef) {
+          setMessage({ kind: "info", text: "No item is selected" });
+          return;
+        }
 
-      setMessage(undefined);
-      if (e.altKey) {
-        invoke("copy_alt", { itemRef: selectedRef }).catch((reason) => {
-          setError(reason, "Failed to copy alt value");
-        });
-      } else {
-        invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
-          setError(reason, "Failed to copy primary value");
-        });
-      }
-    } else if (e.ctrlKey && e.key == "C") {
-      if (!selectedRef) {
-        setMessage({ kind: "info", text: "No item is selected" });
-        return;
-      }
+        setMessage(undefined);
+        if (e.altKey) {
+          invoke("copy_alt", { itemRef: selectedRef }).catch((reason) => {
+            setError(reason, "Failed to copy alt value");
+          });
+        } else {
+          invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
+            setError(reason, "Failed to copy primary value");
+          });
+        }
+      } else if (e.key == "C") {
+        if (!selectedRef) {
+          setMessage({ kind: "info", text: "No item is selected" });
+          return;
+        }
 
-      setMessage(undefined);
-      invoke("copy_secondary", { itemRef: selectedRef }).catch((reason) => {
-        setError(reason, "Failed to copy secondary value");
-      });
+        setMessage(undefined);
+        invoke("copy_secondary", { itemRef: selectedRef }).catch((reason) => {
+          setError(reason, "Failed to copy secondary value");
+        });
+      } else if (e.key == "r") {
+        refreshItems();
+      } else if (e.key == "l") {
+        lock();
+      }
     }
   }
 
