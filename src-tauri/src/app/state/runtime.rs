@@ -34,7 +34,7 @@ impl RuntimeState {
     }
 
     pub fn set_first_launch(&self, value: bool) -> Result<()> {
-        log::debug!("Waiting first_launch for write");
+        log::trace!("Waiting first_launch for write");
         let mut first_launch = self
             .first_launch
             .write()
@@ -46,7 +46,7 @@ impl RuntimeState {
     }
 
     pub fn is_first_launch(&self) -> Result<bool> {
-        log::debug!("Waiting first_launch for read");
+        log::trace!("Waiting first_launch for read");
         let first_launch = self
             .first_launch
             .read()
@@ -60,7 +60,7 @@ impl RuntimeState {
         app: &AppHandle<R>,
         clear_interval: Duration,
     ) -> Result<()> {
-        log::debug!("Waiting clear_clipboard_handle for lock");
+        log::trace!("Waiting clear_clipboard_handle for lock");
         let mut handle = self
             .clear_clipboard_handle
             .lock()

@@ -12,7 +12,7 @@ pub async fn unlock(
     crypto_state: State<'_, CryptoState>,
     mut password: String,
 ) -> Result<()> {
-    log::debug!("Waiting DEK for write");
+    log::trace!("Waiting DEK for write");
     let mut dek = item_state
         .dek
         .write()

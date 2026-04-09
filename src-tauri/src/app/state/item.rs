@@ -33,7 +33,7 @@ impl ItemState {
     }
 
     pub fn is_locked(&self) -> Result<bool> {
-        log::debug!("Waiting DEK for read");
+        log::trace!("Waiting DEK for read");
         let dek = self
             .dek
             .read()
@@ -43,7 +43,7 @@ impl ItemState {
     }
 
     pub fn lock(&self) -> Result<()> {
-        log::debug!("Waiting DEK for write");
+        log::trace!("Waiting DEK for write");
         let mut dek = self
             .dek
             .write()
@@ -55,7 +55,7 @@ impl ItemState {
     }
 
     pub fn replace_dek(&self, new_dek: Dek) -> Result<()> {
-        log::debug!("Waiting DEK for write");
+        log::trace!("Waiting DEK for write");
         let mut dek = self
             .dek
             .write()
@@ -67,13 +67,13 @@ impl ItemState {
     }
 
     pub fn extend(&self, new_items: HashSet<Item>) -> Result<()> {
-        log::debug!("Waiting items for write");
+        log::trace!("Waiting items for write");
         let mut items = self
             .items
             .write()
             .map_err(|_| Error::TryLock("items".into()))?;
 
-        log::debug!("Waiting DEK for read");
+        log::trace!("Waiting DEK for read");
         let dek = self
             .dek
             .read()
@@ -108,8 +108,7 @@ impl ItemState {
 
         log::trace!("Decrypting items and mapping them to refs");
         let mut decrypted_items = Vec::with_capacity(items.capacity());
-        for (item_id, item) in items.iter() {
-            log::trace!("Decrypting item {}", item_id);
+        for (_, item) in items.iter() {
             decrypted_items.push(item.decrypt::<Item>(key)?.into());
         }
 
