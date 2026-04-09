@@ -72,6 +72,11 @@ pass_cli_path = "path/to/pass-cli"
 #
 # Default: info
 log_level = "info"
+
+# Number of seconds to wait until clearing the clipboard after copying an item.
+#
+# Default: 120
+clear_interval = 120
 ```
 
 All of the configuration options are supported through the CLI and options
@@ -113,12 +118,13 @@ There is an MSI installer for Windows. This installer is not signed.
 
 ## TODOs
 
-- [ ] Fuzzy search support for searching in titles, usernames, and websites
-- [ ] Overall better UI/UX for the user facing parts
+- [x] Fuzzy search support for searching in titles, usernames, and websites
+- [x] Overall better UI/UX for the user facing parts
 - [x] Auto-hide after copy
-- [ ] Clear clipboard after a configurable amount of seconds
+- [x] Clear clipboard after a configurable amount of seconds
 - [ ] Automatically lock after a configurable amount of minutes/hours
-- [ ] Add support for copying TOTP codes from an otpauth uri
-- [ ] Add support for launching directly to tray instead of creating a window
+- [x] Add support for copying TOTP codes from an otpauth uri
+- [x] Add support for launching directly to tray instead of creating a window
+- [ ] Add configurable keyboard shortcuts
 
 <!-- :vim set sw=2 ts=2 sts=2 sw=80: -->
