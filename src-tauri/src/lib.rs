@@ -67,6 +67,11 @@ pub fn run() -> Result<()> {
     let app = builder.build(context)?;
     let app_handle = app.handle();
 
+    if cli.command.is_none_or(|command| command != app::cli::Command::Show) {
+        eprintln!("There is no instance of the application running");
+        return Ok(());
+    }
+
     let _tray_icon = create_icon(app_handle)?;
 
     let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);

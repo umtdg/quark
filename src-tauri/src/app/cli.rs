@@ -18,7 +18,7 @@ pub struct Cli {
     pub pass_cli: Option<String>,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, PartialEq, Eq)]
 pub enum Command {
     Show,
     Lock,
