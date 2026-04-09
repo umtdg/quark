@@ -9,11 +9,14 @@ use crate::error::Result;
 use crate::serde::log_level;
 
 #[derive(Debug, Deserialize)]
+#[serde(default)]
 pub struct AppConfig {
     pass_cli_path: String,
 
     #[serde(with = "log_level")]
     log_level: LevelFilter,
+
+    clear_interval: u32,
 }
 
 impl Default for AppConfig {
@@ -21,6 +24,7 @@ impl Default for AppConfig {
         Self {
             pass_cli_path: AppConfig::DEFAULT_PASS_CLI_PATH.into(),
             log_level: LevelFilter::Info,
+            clear_interval: 120,
         }
     }
 }
@@ -34,10 +38,7 @@ impl AppConfig {
 
         let config_file = File::from(path).format(FileFormat::Toml).required(false);
 
-        let builder = Config::builder()
-            .add_source(config_file)
-            .set_default("pass_cli_path", Self::DEFAULT_PASS_CLI_PATH)?
-            .set_default("log_level", "info")?;
+        let builder = Config::builder().add_source(config_file);
 
         let config = builder.build()?;
         let app_config: Self = config.try_deserialize()?;
@@ -61,5 +62,9 @@ impl AppConfig {
 
     pub fn get_level_filter(&self) -> LevelFilter {
         self.log_level
+    }
+
+    pub fn get_clear_interval(&self) -> u32 {
+        self.clear_interval
     }
 }

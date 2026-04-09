@@ -1,5 +1,6 @@
 use clap::Parser;
 use tauri::{AppHandle, Manager, Runtime, State, WebviewWindow, Window, WindowEvent};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::app::cli::{Cli, Command};
 use crate::app::state::ItemState;
@@ -41,6 +42,14 @@ pub fn lock_app<R: Runtime>(app: &AppHandle<R>) {
 
     let lock_task = async move { lock(app_clone, item_state).await };
     let _ = tauri::async_runtime::block_on(lock_task);
+}
+
+pub fn clear_clipboard<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
+    log::debug!("Clearing clipboard");
+
+    app.clipboard().clear()?;
+
+    Ok(())
 }
 
 pub fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {

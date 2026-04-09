@@ -32,13 +32,14 @@ clap = { version = "4.6.0", features = ["derive"] }
 config = "0.15.22"
 dirs = "6.0.0"
 log = "0.4.29"
+nucleo-matcher = "0.3.1"
 rand = "0.10.0"
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = "1"
 thiserror = "2.0.18"
-zeroize = { version = "1.8.2", features = ["derive", "alloc"] }
+tokio = { version = "1.51.1", default-features = false }
 totp-rs = { version = "5.7.1", features = ["otpauth", "zeroize"] }
-nucleo-matcher = "0.3.1"
+zeroize = { version = "1.8.2", features = ["derive", "alloc"] }
 
 [dev-dependencies]
 clippy = "0.0.302"

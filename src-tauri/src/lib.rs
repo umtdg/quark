@@ -72,6 +72,8 @@ pub fn run() -> Result<()> {
         return Ok(());
     }
 
+    log::info!("Launching application with config: {:?}", app_config);
+
     let _tray_icon = create_icon(app_handle)?;
 
     let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
