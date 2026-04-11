@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 
 import { Alert, AlertKind, Refresh, Lock } from "../components";
 import useWindowFocus from "../hooks/useWindowFocus";
+import { listen } from "@tauri-apps/api/event";
 
 interface ItemRefLogin {
   type: "login";
@@ -124,7 +125,20 @@ export default function QuickAccess() {
     });
   }
 
+  function clipboardClear() {
+    setQuery("");
+    setItems([]);
+    setSelectedIndex(0);
+  }
+
   useEffect(getItems, [query]);
+
+  useEffect(() => {
+    const unlisten = listen("clipboard-clear", clipboardClear);
+    return () => {
+      unlisten.then((fn) => fn());
+    };
+  });
 
   return (
     <div

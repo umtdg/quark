@@ -1,5 +1,5 @@
 use clap::Parser;
-use tauri::{AppHandle, Manager, Runtime, State, WebviewWindow, Window, WindowEvent};
+use tauri::{AppHandle, Emitter, Manager, Runtime, State, WebviewWindow, Window, WindowEvent};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use crate::app::cli::{Cli, Command};
@@ -48,6 +48,7 @@ pub fn clear_clipboard<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
     log::debug!("Clearing clipboard");
 
     app.clipboard().clear()?;
+    app.emit("clipboard-clear", None::<&str>)?;
 
     Ok(())
 }
