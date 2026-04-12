@@ -16,7 +16,8 @@
         "title": "Quark",
         "width": 500,
         "height": 400,
-        "decorations": false
+        "decorations": false,
+        "center": true
       }
     ],
     "security": {
