@@ -1,9 +1,9 @@
 use tauri::menu::{Menu, MenuEvent, MenuItem};
-use tauri::tray::{TrayIcon, TrayIconBuilder, TrayIconEvent};
+use tauri::tray::{MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Runtime};
 
-use crate::handlers::{show_window, lock_app};
 use crate::error::Result;
+use crate::handlers::{lock_app, show_window};
 
 pub fn create_icon<M: Manager<R>, R: Runtime>(manager: &M) -> Result<TrayIcon<R>> {
     let menu = create_menu(manager)?;
@@ -53,14 +53,18 @@ fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
 
 fn on_tray_icon_event<R: Runtime>(tray_icon: &TrayIcon<R>, event: TrayIconEvent) {
     // Doesn't seem to work on Linux and still shows the menu on left click
-    if let TrayIconEvent::Click { .. } = event {
-        let app = tray_icon.app_handle();
-        match app.get_webview_window("main") {
-            Some(window) => {
-                window.show().unwrap();
-                window.set_focus().unwrap();
+    if let TrayIconEvent::Click {
+        button,
+        button_state,
+        ..
+    } = event
+    {
+        match button {
+            tauri::tray::MouseButton::Left if button_state == MouseButtonState::Down => {
+                let app = tray_icon.app_handle();
+                show_window(&app).expect("failed to show main window");
             }
-            None => log::warn!("No main window to show"),
+            _ => {}
         }
     }
 }
