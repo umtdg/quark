@@ -75,6 +75,9 @@ export default function QuickAccess() {
           });
         }
       } else if (e.key == "C") {
+        // prevents ctrl + shift + c from opening up developer tools on windows
+        e.preventDefault();
+
         if (!selectedRef) {
           setMessage({ kind: "info", text: "No item is selected" });
           return;
