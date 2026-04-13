@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as log from "@tauri-apps/plugin-log";
 import React, { useState } from "react";
-import { Alert, Refresh } from "../components";
+import { Alert, Icon, Refresh } from "../components";
 import useWindowFocus from "../hooks/useWindowFocus";
 
 export default function Setup() {
@@ -47,6 +47,8 @@ export default function Setup() {
 
   return (
     <form onSubmit={initCrypto} className="w-80 flex flex-col items-center justify-center gap-4">
+      <Icon className="w-24 h-24" />
+
       <h1 className="font-bold">Set a password</h1>
 
       <input

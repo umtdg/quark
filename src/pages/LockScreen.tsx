@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import * as log from "@tauri-apps/plugin-log";
-import { Alert, ArrowForward, Refresh } from "../components";
+import { Alert, ArrowForward, Refresh, Icon } from "../components";
 import { useEffect, useState } from "react";
 import useWindowFocus from "../hooks/useWindowFocus";
 
@@ -47,7 +47,7 @@ export default function LockScreen() {
 
   return (
     <div className="w-80 h-full flex flex-col items-center justify-center gap-8">
-      <img src="/src/assets/icon.png" width={64} height={64} />
+      <Icon className="w-24 h-24" />
 
       <form
         onSubmit={unlock}
