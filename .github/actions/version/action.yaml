@@ -1,0 +1,65 @@
+name: "version"
+description: "Patch nightly version in tauri config"
+
+inputs:
+  platform:
+    required: true
+    description: "Runner platform"
+  build-number:
+    required: true
+    description: "Monotonic nightly build number"
+  tauri-config:
+    required: false
+    default: src-tauri/tauri.conf.json
+    description: "Tauri config file"
+
+outputs:
+  date:
+    description: "Human-readable date for use in releases"
+    value: ${{ steps.version.outputs.date }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Get current date and version
+      id: version
+      shell: bash
+      run: |
+        # gets the date for both tag and version, and in human readable form for releases
+        TAURI_CONF=${{ inputs.tauri-config }}
+        DATE="$(date '+%Y-%m-%d')"
+        VER=$(jq -r '.version' "$TAURI_CONF")
+        BUILD_NUMBER=${{ inputs.build-number }}
+
+        echo "date=$DATE" >> $GITHUB_OUTPUT
+        echo "version=$VER" >> $GITHUB_OUTPUT
+
+    - name: Patch product name for nightly
+      shell: bash
+      run: |
+        TAURI_CONF=${{ inputs.tauri-config }}
+        jq '.productName += " Nightly"' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
+
+    - name: Patch nightly version in tauri config
+      shell: bash
+      run: |
+        TAURI_CONF=${{ inputs.tauri-config }}
+        VER="${{ steps.version.outputs.version }}-nightly.${{ inputs.build-number }}"
+        jq --arg v "$VER" '.version = $v' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
+
+    - name: Patch WiX MSI version for nightly (Windows)
+      if: inputs.platform == 'windows-latest'
+      shell: bash
+      run: |
+        TAURI_CONF=${{ inputs.tauri-config }}
+        WIX_VER="${{ steps.version.outputs.version }}.${{ inputs.build-number }}"
+        jq --arg v "$WIX_VER" '.bundle.windows.wix.version = $v' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
+
+    - name: Log patched nightly version
+      shell: bash
+      run: |
+        TAURI_CONF=${{ inputs.tauri-config }}
+        echo "Base version: ${{ steps.version.outputs.version }}"
+        echo "Version: $(jq -r '.version' $TAURI_CONF)"
+        echo "WiX version: $(jq -r '.bundle.windows.wix.version // "<unset>"' $TAURI_CONF)"
+        echo "Product name: $(jq -r '.productName' $TAURI_CONF)"
