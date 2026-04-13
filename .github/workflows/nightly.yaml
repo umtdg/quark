@@ -1,11 +1,15 @@
-name: 'nightly'
-description: 'Create a nightly build'
+name: "nightly"
+description: "Create a nightly build"
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 0 * * *'
-      timezone: 'Europe/Istanbul'
+    - cron: "0 0 * * *"
+      timezone: "Europe/Istanbul"
+
+concurrency:
+  group: nightly-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   check-for-changes:
@@ -24,9 +28,36 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-  nightly:
+  prepare:
     needs: check-for-changes
     if: needs.check-for-changes.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      build-number: ${{ steps.compute-counter.outputs.build-number }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Compute nightly build counter
+        id: compute-counter
+        shell: bash
+        run: |
+          CURRENT=$(cat .github/nightly-build-number)
+          NEXT=$((CURRENT + 1))
+          echo "build-number=$NEXT" >> "$GITHUB_OUTPUT"
+
+      - name: Delete existing rolling release and tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release delete rolling --cleanup-tag -y || true
+
+  nightly:
+    needs: prepare
 
     permissions:
       contents: write
@@ -34,35 +65,70 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+          - platform: "ubuntu-22.04"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/setup
+        name: "Set-up environment"
         with:
           platform: ${{ matrix.platform }}
 
       - uses: ./.github/actions/version
+        name: "Patch version and product name for nightly"
         id: version
         with:
           platform: ${{ matrix.platform }}
+          build-number: ${{ needs.prepare.outputs.build-number }}
 
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: nightly-${{ steps.version.outputs.build-number }}
-          releaseName: 'Quark Nightly ${{ steps.version.outputs.date }} - ${{ steps.version.outputs.build-number }}'
-          releaseBody: 'Automated nightly build from main'
+          tagName: rolling
+          releaseName: "Quark Nightly ${{ steps.version.outputs.date }} (Build ${{ needs.prepare.outputs.build-number }})"
+          releaseBody: "Automated nightly build from main"
           releaseDraft: false
           prerelease: true
           generateReleaseNotes: false
           args: ${{ matrix.args }}
 
+  finalize:
+    needs:
+      - prepare
+      - nightly
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.ref_name }}
+
+      - name: Commit nightly build counter after successful build
+        env:
+          BUILD_NUMBER: ${{ needs.prepare.outputs.build-number }}
+        run: |
+          COUNTER_FILE=".github/nightly-build-number"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          printf '%s\n' "$BUILD_NUMBER" > "$COUNTER_FILE"
+
+          # do not update if there is no diff
+          if git diff --quiet -- "$COUNTER_FILE"; then
+            exit 0
+          fi
+
+          git add "$COUNTER_FILE"
+          git commit -m "ci: bump nightly build counter to $BUILD_NUMBER"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

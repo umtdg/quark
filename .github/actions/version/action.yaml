@@ -1,21 +1,21 @@
-name: 'version'
-description: 'Append pre-release version identifier to Cargo.toml'
+name: "version"
+description: "Append pre-release version identifier to Cargo.toml"
 
 inputs:
   platform:
     required: true
-    description: 'Runner platform'
+    description: "Runner platform"
+  build-number:
+    required: true
+    description: "Monotonic nightly build number"
 
 outputs:
   date:
-    description: 'Human-readable date for use in releases'
+    description: "Human-readable date for use in releases"
     value: ${{ steps.version.outputs.date }}
-  build-number:
-    description: 'Build number -- equivalent to $GITHUB_RUN_NUMBER'
-    value: ${{ steps.version.outputs.build-number }}
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: Get current date and version
       id: version
@@ -24,12 +24,12 @@ runs:
         # gets the date for both tag and version, and in human readable form for releases
         DATE="$(date '+%Y-%m-%d')"
         VER=$(cargo metadata --frozen --no-deps --color never --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')
+        BUILD_NUMBER="${{ inputs.build-number }}"
 
         echo "date=$DATE" >> $GITHUB_OUTPUT
-        echo "build-number=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
 
-        echo "version-win=$VER.$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
-        echo "version-unix=$VER-nightly.$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+        echo "version-win=$VER.$BUILD_NUMBER" >> $GITHUB_OUTPUT
+        echo "version-unix=$VER-nightly.$BUILD_NUMBER" >> $GITHUB_OUTPUT
 
     - name: Patch version in Cargo.toml for nightly (Ubuntu)
       if: inputs.platform == 'ubuntu-22.04'
