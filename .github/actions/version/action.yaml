@@ -1,5 +1,5 @@
 name: "version"
-description: "Append pre-release version identifier to Cargo.toml"
+description: "Patch nightly version in tauri config"
 
 inputs:
   platform:
@@ -40,25 +40,26 @@ runs:
         TAURI_CONF=${{ inputs.tauri-config }}
         jq '.productName += " Nightly"' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
 
-    - name: Patch version in Cargo.toml for nightly (Ubuntu & MacOS)
-      if: inputs.platform != 'windows-latest'
+    - name: Patch nightly version in tauri config
       shell: bash
       run: |
         TAURI_CONF=${{ inputs.tauri-config }}
         VER="${{ steps.version.outputs.version }}-nightly.${{ inputs.build-number }}"
         jq --arg v "$VER" '.version = $v' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
 
-    - name: Patch version in Cargo.toml for nightly (Windows)
+    - name: Patch WiX MSI version for nightly (Windows)
       if: inputs.platform == 'windows-latest'
       shell: bash
       run: |
         TAURI_CONF=${{ inputs.tauri-config }}
-        VER="${{ steps.version.outputs.version }}.${{ inputs.build-number }}"
-        jq --arg v "$VER" '.version = $v' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
+        WIX_VER="${{ steps.version.outputs.version }}.${{ inputs.build-number }}"
+        jq --arg v "$WIX_VER" '.bundle.windows.wix.version = $v' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
 
     - name: Log patched nightly version
       shell: bash
       run: |
+        TAURI_CONF=${{ inputs.tauri-config }}
         echo "Base version: ${{ steps.version.outputs.version }}"
         echo "Version: $(jq -r '.version' $TAURI_CONF)"
+        echo "WiX version: $(jq -r '.bundle.windows.wix.version // "<unset>"' $TAURI_CONF)"
         echo "Product name: $(jq -r '.productName' $TAURI_CONF)"
