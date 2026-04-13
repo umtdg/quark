@@ -58,7 +58,7 @@ jobs:
         run: |
           DATE="${{ steps.date.outputs.date }}"
           VER=$(jq -r '.version' src-tauri/tauri.conf.json)
-          NIGHTLY_VER="${VER}-nightly.${}"
+          NIGHTLY_VER="${VER}-nightly.${{ steps.date.outputs.date }}"
 
           JSON_FILES=(src-tauri/tauri.conf.json package.json)
           TOML_FILES=(src-tauri/Cargo.toml)
