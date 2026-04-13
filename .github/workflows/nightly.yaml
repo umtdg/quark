@@ -70,7 +70,7 @@ jobs:
 
           for f in "${JSON_FILES[@]}"; do
             echo "Patching $f"
-            sed -i "s/^version = \".*\"/version = \"$NIGHTLY_VER\"" "$f"
+            sed -i "s/^version = \".*\"/version = \"$NIGHTLY_VER\"/" "$f"
           done
 
           jq --arg -v "$NIGHTLY_VER" '.version = $v' src-tauri/tauri.conf.json > tmp.json && mv -v tmp.json src-tauri/tauri.conf.json
