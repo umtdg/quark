@@ -26,7 +26,7 @@ runs:
       run: |
         # gets the date for both tag and version, and in human readable form for releases
         DATE="$(date '+%Y-%m-%d')"
-        VER=$(cargo metadata --frozen --no-deps --color never --format-version 1 --manifest-file src-tauri/Cargo.toml | jq -r '.packages[0].version')
+        VER=$(cargo metadata --frozen --no-deps --color never --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')
 
         echo "date=$DATE" >> $GITHUB_OUTPUT
         echo "build-number=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
