@@ -45,35 +45,12 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: get current date
-        id: date
-        shell: bash
-        run: |
-          # gets the date for both tag and version, and in human readable form for releases
-          echo "date=$(date '+%Y%m%d')" >> $GITHUB_OUTPUT
-          echo "date-hr=$(date '+%Y-%m-%d')" >> $GITHUB_OUTPUT
-
-      - name: patch nightly version
-        shell: bash
-        run: |
-          DATE="${{ steps.date.outputs.date }}"
-          VER=$(jq -r '.version' src-tauri/tauri.conf.json)
-          NIGHTLY_VER="${VER}-nightly.${{ steps.date.outputs.date }}"
-
-          JSON_FILES=(src-tauri/tauri.conf.json package.json)
-          TOML_FILES=(src-tauri/Cargo.toml)
-
-          for f in "${JSON_FILES[@]}"; do
-            echo "Patching $f"
-            jq --arg v "$NIGHTLY_VER" '.version = $v' "$f" > tmp.json && mv -v tmp.json "$f"
-          done
-
-          for f in "${JSON_FILES[@]}"; do
-            echo "Patching $f"
-            sed -i "s/^version = \".*\"/version = \"$NIGHTLY_VER\"/" "$f"
-          done
-
       - uses: ./.github/actions/setup
+        with:
+          platform: ${{ matrix.platform }}
+
+      - uses: ./.github/actions/version
+        id: version
         with:
           platform: ${{ matrix.platform }}
 
@@ -81,8 +58,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: nightly-${{ steps.date.outputs.date }}
-          releaseName: 'Quark Nightly ${{ steps.date.outputs.date-hr }}'
+          tagName: nightly-${{ steps.version.outputs.build-number }}
+          releaseName: 'Quark Nightly ${{ steps.version.outputs.date }}'
           releaseBody: 'Automated nightly build from main'
           releaseDraft: false
           prerelease: true
