@@ -10,9 +10,6 @@ outputs:
   date:
     description: 'Human-readable date for use in releases'
     value: ${{ steps.version.outputs.date }}
-  version:
-    description: 'Pre-release version'
-    value: ${{ steps.version.outputs.version }}
   build-number:
     description: 'Build number -- equivalent to $GITHUB_RUN_NUMBER'
     value: ${{ steps.version.outputs.build-number }}
@@ -30,17 +27,25 @@ runs:
 
         echo "date=$DATE" >> $GITHUB_OUTPUT
         echo "build-number=$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
-        echo "version=$VER-nightly.$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
 
-    - name: Patch version in Cargo.toml for nightly (Ubuntu & Windows)
-      if: inputs.platform != 'macos-latest'
+        echo "version-win=$VER.$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+        echo "version-unix=$VER-nightly.$GITHUB_RUN_NUMBER" >> $GITHUB_OUTPUT
+
+    - name: Patch version in Cargo.toml for nightly (Ubuntu)
+      if: inputs.platform == 'ubuntu-22.04'
       shell: bash
       run: |
-        sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" src-tauri/Cargo.toml
+        sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.version-unix }}\"/" src-tauri/Cargo.toml
 
     - name: Patch version in Cargo.toml for nightly (MacOS)
       if: inputs.platform == 'macos-latest'
       shell: bash
       run: |
-        sed -i '' "s/^version = \".*\"/version = \"${{ steps.version.outputs.version }}\"/" src-tauri/Cargo.toml
+        sed -i '' "s/^version = \".*\"/version = \"${{ steps.version.outputs.version-unix }}\"/" src-tauri/Cargo.toml
+
+    - name: Patch version in Cargo.toml for nightly (Windows)
+      if: inputs.platform == 'windows-latest'
+      shell: bash
+      run: |
+        sed -i "s/^version = \".*\"/version = \"${{ steps.version.outputs.version-win }}\"/" src-tauri/Cargo.toml
 

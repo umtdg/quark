@@ -59,7 +59,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: nightly-${{ steps.version.outputs.build-number }}
-          releaseName: 'Quark Nightly ${{ steps.version.outputs.date }}'
+          releaseName: 'Quark Nightly ${{ steps.version.outputs.date }} - ${{ steps.version.outputs.build-number }}'
           releaseBody: 'Automated nightly build from main'
           releaseDraft: false
           prerelease: true
