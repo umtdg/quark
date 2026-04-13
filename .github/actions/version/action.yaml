@@ -59,7 +59,6 @@ runs:
     - name: Log patched nightly version
       shell: bash
       run: |
-        PATCHED_VERSION=$(cargo metadata --frozen --no-deps --color never --format-version 1 --manifest-path src-tauri/Cargo.toml | jq -r '.packages[0].version')
-        PRODUCT_NAME=$(jq -r '.productName' src-tauri/tauri.conf.json)
-        echo "Nightly version: $PATCHED_VERSION"
-        echo "Product name: $PRODUCT_NAME"
+        echo "Base version: ${{ steps.version.outputs.version }}"
+        echo "Version: $(jq -r '.version' $TAURI_CONF)"
+        echo "Product name: $(jq -r '.productName' $TAURI_CONF)"
