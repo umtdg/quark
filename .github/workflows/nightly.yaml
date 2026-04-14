@@ -19,10 +19,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: check for changes
+      - name: Check for changes in files and folders that requires rebuild
         id: detect-changes
         run: |
-          if git log --since="24 hours ago" --oneline | grep -q .; then
+          FILE_LIST=(src src-tauri index.html package.json pnpm-lock.json tsconfig.json vite.config.json)
+          if git log --since="24 hours ago" --oneline -- "${FILE_LIST[@]}" | grep -q .; then
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "changed=false" >> $GITHUB_OUTPUT
