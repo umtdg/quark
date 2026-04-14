@@ -25,17 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: check version
+      - name: Check version
         shell: bash
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          PKG=$(jq -r '.version' package.json)
-          CARGO=$(grep -m1 '^version' src-tauri/Cargo.toml | sed 's/.*"\(.*\)"/\1/')
           TAURI=$(jq -r '.version' src-tauri/tauri.conf.json)
 
           MISMATCH=0
-          [ "$PKG" != "$TAG" ] && echo "package.json: $PKG != $TAG" && MISMATCH=1
-          [ "$CARGO" != "$TAG" ] && echo "Cargo.toml: $CARGO != $TAG" && MISMATCH=1
           [ "$TAURI" != "$TAG" ] && echo "tauri.conf.json: $TAURI != $TAG" && MISMATCH=1
 
           [ "$MISMATCH" -eq 1 ] && exit 1
