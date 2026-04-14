@@ -111,7 +111,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          token: ${{ github.QUARK_ACCESS_TOKEN }}
+          token: ${{ secrets.QUARK_ACCESS_TOKEN }}
           fetch-depth: 0
           ref: ${{ github.ref_name }}
 
