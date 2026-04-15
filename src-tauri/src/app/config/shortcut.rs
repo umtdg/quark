@@ -27,13 +27,23 @@ pub struct ShortcutConfig {
 impl Default for ShortcutConfig {
     fn default() -> Self {
         // we accept that application panics here if parsing default shortcuts fail
-        Self {
+        #[cfg(not(target_os = "macos"))]
+        return Self {
             copy_primary: "ctrl-c".parse().unwrap(),
             copy_secondary: "ctrl-shift-c".parse().unwrap(),
             copy_alt: "ctrl-alt-c".parse().unwrap(),
             lock: "ctrl-l".parse().unwrap(),
             refresh_items: "ctrl-r".parse().unwrap(),
-        }
+        };
+
+        #[cfg(target_os = "macos")]
+        return Self {
+            copy_primary: "cmd-c".parse().unwrap(),
+            copy_secondary: "cmd-shift-c".parse().unwrap(),
+            copy_alt: "cmd-option-c".parse().unwrap(),
+            lock: "cmd-l".parse().unwrap(),
+            refresh_items: "cmd-r".parse().unwrap(),
+        };
     }
 }
 

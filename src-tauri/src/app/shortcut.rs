@@ -77,7 +77,7 @@ impl FromStr for Shortcut {
 
                     modifiers.ctrl = true;
                 }
-                "alt" => {
+                "alt" | "option" => {
                     if modifiers.alt {
                         return Err(Error::DuplicateModifier("alt".into()));
                     }
