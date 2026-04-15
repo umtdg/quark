@@ -75,7 +75,7 @@ export default function QuickAccess() {
       case "lock":
         lock();
         break;
-      case "refresh":
+      case "refresh_items":
         refreshItems();
         break;
       default:
