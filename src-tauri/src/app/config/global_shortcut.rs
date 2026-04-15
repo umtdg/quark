@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
-
-use crate::app::shortcut::Shortcut;
+use tauri_plugin_global_shortcut::Shortcut;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -18,7 +17,7 @@ impl Default for GlobalShortcutConfig {
     fn default() -> Self {
         // we accept that application panics here if parsing default shortcuts fail
         Self {
-            show: "ctrl-alt-space".parse().unwrap(),
+            show: "CmdOrCtrl+Alt+Space".parse().unwrap(),
         }
     }
 }

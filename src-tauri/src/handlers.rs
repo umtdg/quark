@@ -88,3 +88,5 @@ pub fn on_multiple_instance<R: Runtime>(app: &AppHandle<R>, args: Vec<String>, _
         }
     }
 }
+
+pub fn global_shortcut_handler() {}

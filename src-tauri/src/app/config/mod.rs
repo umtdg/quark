@@ -2,12 +2,13 @@ mod global_shortcut;
 mod shortcut;
 
 use std::{collections::HashMap, path::Path};
+use tauri_plugin_global_shortcut::Shortcut;
 
 use config::{Config, File, FileFormat};
 use log::LevelFilter;
 use serde::Deserialize;
 
-use crate::app::{cli::Cli, shortcut::Shortcut};
+use crate::app::cli::Cli;
 use crate::error::Result;
 use crate::serde::log_level;
 
@@ -79,6 +80,6 @@ impl AppConfig {
     }
 
     pub fn get_shortcut_map(&self) -> HashMap<Shortcut, ShortcutAction> {
-        self.shortcuts.clone().into_map()
+        self.shortcuts.into_map()
     }
 }

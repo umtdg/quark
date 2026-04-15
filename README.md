@@ -79,13 +79,7 @@ log_level = "info"
 clear_interval = 120
 
 # Define shortcuts that are effective when the application is focused.
-# Format for keys is `<modifiers>-<key>` where `<modifiers>` can be one of:
-#
-# "ctrl" | "control" => ctrl key
-# "alt" | "option" => alt key on Linux/Windows, option key on MacOS
-# "meta" | "super" | "win" | "cmd" -> super/windows key on Linux/Windows, command key on MacOS
-# "shift" -> shift key
-#
+# Modifiers and key are separated by `+`.
 #
 # Supported actions:
 # "copy_primary": copies primary value of the selected item
@@ -97,23 +91,16 @@ clear_interval = 120
 # See [Copy Actions](#copy-actions) for details on what `copy_*` actions actually
 # copy
 [shortcuts]
-copy_primary = "ctrl-c"
-copy_secondary = "ctrl-shift-c"
-copy_alt = "ctrl-alt-c"
-lock = "ctrl-l"
-refresh_items = "ctrl-r"
-
-# Default shortcuts on MacOS has `cmd` instead of `ctrl` and has `option` instead of `alt`
-# copy_primary = "cmd-c"
-# copy_secondary = "cmd-shift-c"
-# copy_alt = "cmd-option-c"
-# lock = "cmd-l"
-# refresh_items = "cmd-r"
+copy_primary = "CmdOrCtrl+C"
+copy_secondary = "CmdOrCtrl+Shift+C"
+copy_alt = "CmdOrCtrl+Alt+C"
+lock = "CmdOrCtrl+l"
+refresh_items = "CmdOrCtrl+r"
 
 # Define global shortcuts that are effective even when the application is
 # not focused.
 [global_shortcuts]
-show = "ctrl-alt-space"
+show = "CmdOrCtrl+Alt+Space"
 ```
 
 All of the configuration options are supported through the CLI and options

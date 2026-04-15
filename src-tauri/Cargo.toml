@@ -20,6 +20,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-clipboard-manager = { git = "https://github.com/umtdg/plugins-workspace", branch = "feat-clipboard-exclude" }
 tauri-plugin-log = "2"
+tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2"
 tauri-plugin-shell = "2.3.5"
 aes-gcm = { version = "0.10.3", features = ["std"] }

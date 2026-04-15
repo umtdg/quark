@@ -65,13 +65,12 @@ export default function useShortcuts<T>(): ShortcutState<T> {
     if (!key) return null;
 
     const parts: string[] = [];
-    if (e.ctrlKey) parts.push("ctrl");
-    if (e.altKey) parts.push("alt");
-    if (e.metaKey) parts.push("meta");
-    if (e.shiftKey) parts.push("shift");
+    if (e.ctrlKey || e.metaKey) parts.push("CmdOrCtrl");
+    if (e.altKey) parts.push("Alt");
+    if (e.shiftKey) parts.push("Shift");
 
     parts.push(key);
-    return parts.join("-");
+    return parts.join("+").toLowerCase();
   }
 
   useEffect(() => {
