@@ -1,12 +1,18 @@
-use std::path::Path;
+mod global_shortcut;
+mod shortcut;
+
+use std::{collections::HashMap, path::Path};
 
 use config::{Config, File, FileFormat};
 use log::LevelFilter;
 use serde::Deserialize;
 
-use crate::app::cli::Cli;
+use crate::app::{cli::Cli, shortcut::Shortcut};
 use crate::error::Result;
 use crate::serde::log_level;
+
+pub use global_shortcut::{GlobalShortcutAction, GlobalShortcutConfig};
+pub use shortcut::{ShortcutAction, ShortcutConfig};
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -17,6 +23,8 @@ pub struct AppConfig {
     log_level: LevelFilter,
 
     clear_interval: u32,
+    shortcuts: ShortcutConfig,
+    global_shortcuts: GlobalShortcutConfig,
 }
 
 impl Default for AppConfig {
@@ -25,6 +33,8 @@ impl Default for AppConfig {
             pass_cli_path: AppConfig::DEFAULT_PASS_CLI_PATH.into(),
             log_level: LevelFilter::Info,
             clear_interval: 120,
+            shortcuts: ShortcutConfig::default(),
+            global_shortcuts: GlobalShortcutConfig::default(),
         }
     }
 }
@@ -66,5 +76,9 @@ impl AppConfig {
 
     pub fn get_clear_interval(&self) -> u32 {
         self.clear_interval
+    }
+
+    pub fn get_shortcut_map(&self) -> HashMap<Shortcut, ShortcutAction> {
+        self.shortcuts.clone().into_map()
     }
 }

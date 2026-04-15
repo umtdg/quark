@@ -55,6 +55,9 @@ pub enum Error {
 
     #[error("TOTP error: {0}")]
     Totp(String),
+
+    #[error("Shortcut error: {0}")]
+    Shortcut(#[from] crate::app::shortcut::Error),
 }
 
 impl serde::Serialize for Error {

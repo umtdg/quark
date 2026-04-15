@@ -77,6 +77,34 @@ log_level = "info"
 #
 # Default: 120
 clear_interval = 120
+
+# Define shortcuts that are effective when the application is focused.
+# Format for each shortcut is `ctrl-alt-meta-shift-<key>`. Ordering of
+# modifiers does not matter but the actual key must be last.
+#
+# Supported actions:
+# "copy_primary": copies primary value of the selected item
+#   - Login: username or email
+#   - Credit Card: number
+# "copy_secondary": copies secondary value of the selected item
+#   - Login: password
+#   - Credit Card: verification number
+# "copy_alt": copies alternative/tertiary value of the selected item
+#   - Login: TOTP
+#   - Credit Card: expiration date
+# "lock": locks the application
+# "refresh_items": fetches items from pass-cli and updates the item store
+[shortcuts]
+copy_primary = "ctrl-c"
+copy_secondary = "ctrl-shift-c"
+copy_alt = "ctrl-alt-c"
+lock = "ctrl-l"
+refresh_items = "ctrl-r"
+
+# Define global shortcuts that are effective even when the application is
+# not focused.
+[global_shortcuts]
+show = "ctrl-alt-space"
 ```
 
 All of the configuration options are supported through the CLI and options
