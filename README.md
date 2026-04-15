@@ -79,27 +79,36 @@ log_level = "info"
 clear_interval = 120
 
 # Define shortcuts that are effective when the application is focused.
-# Format for each shortcut is `ctrl-alt-meta-shift-<key>`. Ordering of
-# modifiers does not matter but the actual key must be last.
+# Format for keys is `<modifiers>-<key>` where `<modifiers>` can be one of:
+#
+# "ctrl" | "control" => ctrl key
+# "alt" | "option" => alt key on Linux/Windows, option key on MacOS
+# "meta" | "super" | "win" | "cmd" -> super/windows key on Linux/Windows, command key on MacOS
+# "shift" -> shift key
+#
 #
 # Supported actions:
 # "copy_primary": copies primary value of the selected item
-#   - Login: username or email
-#   - Credit Card: number
 # "copy_secondary": copies secondary value of the selected item
-#   - Login: password
-#   - Credit Card: verification number
 # "copy_alt": copies alternative/tertiary value of the selected item
-#   - Login: TOTP
-#   - Credit Card: expiration date
 # "lock": locks the application
 # "refresh_items": fetches items from pass-cli and updates the item store
+#
+# See [Copy Actions](#copy-actions) for details on what `copy_*` actions actually
+# copy
 [shortcuts]
 copy_primary = "ctrl-c"
 copy_secondary = "ctrl-shift-c"
 copy_alt = "ctrl-alt-c"
 lock = "ctrl-l"
 refresh_items = "ctrl-r"
+
+# Default shortcuts on MacOS has `cmd` instead of `ctrl` and has `option` instead of `alt`
+# copy_primary = "cmd-c"
+# copy_secondary = "cmd-shift-c"
+# copy_alt = "cmd-option-c"
+# lock = "cmd-l"
+# refresh_items = "cmd-r"
 
 # Define global shortcuts that are effective even when the application is
 # not focused.
