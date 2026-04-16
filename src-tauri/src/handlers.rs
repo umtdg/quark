@@ -101,12 +101,11 @@ pub fn global_shortcut_handler<R: Runtime>(
         return;
     }
 
-    log::debug!("Got shortcut: {}", shortcut);
+    log::debug!("Detected global shortcut: '{}'", shortcut);
     if let Some(action) = app_config.get_global_shortcut_action(shortcut) {
-        log::debug!("Shortcut action: {:?}", action);
+        log::debug!("Action for shortcut is '{:?}'", action);
         match action {
             crate::app::config::GlobalShortcutAction::Show => {
-                log::debug!("Global shortcut for show detected");
                 show_window(app).expect("failed to show main window");
             }
         }

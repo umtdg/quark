@@ -21,7 +21,7 @@ impl Default for GlobalShortcutConfig {
     fn default() -> Self {
         // we accept that application panics here if parsing default shortcuts fail
         Self {
-            show: "CmdOrCtrl+Alt+Space".parse().unwrap(),
+            show: "CmdOrCtrl+Shift+Space".parse().unwrap(),
         }
     }
 }
