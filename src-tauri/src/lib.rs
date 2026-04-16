@@ -71,7 +71,7 @@ fn launch_app(app: App, app_config: AppConfig, runtime_state: RuntimeState) -> R
 
     // unwrap is safe since we return Some() from the callback of load_or
     let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
-    let item_state = ItemState::load_or_new(item_state_path);
+    let item_state: ItemState = ItemState::load_or_new(item_state_path)?;
 
     let crypto_state_path = runtime_state.data_dir.join(CryptoState::FILE_NAME);
     let crypto_state: Option<CryptoState> = CryptoState::load_or(&crypto_state_path, |_| {
