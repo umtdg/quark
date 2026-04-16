@@ -20,6 +20,8 @@ pub struct Cli {
 
 #[derive(Subcommand, PartialEq, Eq)]
 pub enum Command {
+    Version,
+    Info,
     Show,
     Lock,
     Quit,
