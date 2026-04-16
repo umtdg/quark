@@ -6,7 +6,7 @@ pub mod item;
 pub mod serde;
 
 use clap::Parser;
-use tauri::{Builder, Manager};
+use tauri::{App, Builder, Context, Manager};
 
 use crate::app::cli::Cli;
 use crate::app::config::AppConfig;
@@ -19,22 +19,7 @@ use crate::commands::{
 use crate::error::Result;
 use crate::handlers::{global_shortcut_handler, on_multiple_instance, on_window_event};
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() -> Result<()> {
-    let cli = Cli::parse();
-
-    let context = tauri::generate_context!();
-    let bundle_identifier = &context.config().identifier;
-
-    let runtime_state = RuntimeState::new(bundle_identifier.as_str(), false)?;
-
-    let config_path = match &cli.config {
-        Some(config_path) => config_path.clone(),
-        None => runtime_state.config_dir.join("config.toml"),
-    };
-    let mut app_config = AppConfig::load(config_path)?;
-    app_config.merge(&cli);
-
+fn build_app(context: Context, app_config: &AppConfig) -> Result<App> {
     let tauri_log = tauri_plugin_log::Builder::new()
         .targets([tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::LogDir { file_name: None },
@@ -71,17 +56,17 @@ pub fn run() -> Result<()> {
             get_shortcut_action,
         ]);
 
-    let app = builder.build(context)?;
-    let app_handle = app.handle();
+    builder.build(context).map_err(Into::into)
+}
 
-    if cli.command.unwrap_or(app::cli::Command::Show) != app::cli::Command::Show {
-        eprintln!("There is no instance of the application running");
-        return Ok(());
-    }
-
+fn launch_app(
+    app: App,
+    app_config: AppConfig,
+    runtime_state: RuntimeState,
+) -> Result<()> {
     log::info!("Launching application with config: {:?}", app_config);
 
-    let _tray_icon = create_icon(app_handle)?;
+    let _tray_icon = create_icon(app.handle())?;
 
     // unwrap is safe since we return Some() from the callback of load_or
     let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
@@ -106,4 +91,33 @@ pub fn run() -> Result<()> {
     app.run(|_, _| {});
 
     Ok(())
+}
+
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() -> Result<()> {
+    let cli = Cli::parse();
+
+    let context = tauri::generate_context!();
+    let bundle_identifier = &context.config().identifier;
+
+    let runtime_state = RuntimeState::new(bundle_identifier.as_str(), false)?;
+
+    let config_path = match &cli.config {
+        Some(config_path) => config_path.clone(),
+        None => runtime_state.config_dir.join("config.toml"),
+    };
+    let mut app_config = AppConfig::load(config_path)?;
+    app_config.merge(&cli);
+
+    let app = build_app(context, &app_config)?;
+
+    // if we end up here, it means that single instance plugin didn't pick up
+    // and this is the first launch of the app
+
+    if cli.command.unwrap_or(app::cli::Command::Show) != app::cli::Command::Show {
+        eprintln!("There is no instance of the application running");
+        return Ok(());
+    }
+
+    launch_app(app, app_config, runtime_state)
 }
