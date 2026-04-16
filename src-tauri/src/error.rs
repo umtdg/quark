@@ -55,6 +55,12 @@ pub enum Error {
 
     #[error("TOTP error: {0}")]
     Totp(String),
+
+    #[error("Invalid shortcut: {0}")]
+    ShortcutParse(#[from] global_hotkey::hotkey::HotKeyParseError),
+
+    #[error("Error when registering shortcuts: {0}")]
+    ShortcutPlugin(#[from] tauri_plugin_global_shortcut::Error),
 }
 
 impl serde::Serialize for Error {

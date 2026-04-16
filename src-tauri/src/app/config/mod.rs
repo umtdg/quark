@@ -1,12 +1,19 @@
+mod global_shortcut;
+mod shortcut;
+
 use std::path::Path;
 
 use config::{Config, File, FileFormat};
 use log::LevelFilter;
 use serde::Deserialize;
+use tauri_plugin_global_shortcut::Shortcut;
 
 use crate::app::cli::Cli;
 use crate::error::Result;
 use crate::serde::log_level;
+
+pub use global_shortcut::{GlobalShortcutAction, GlobalShortcutConfig, GlobalShortcutMap};
+pub use shortcut::{ShortcutAction, ShortcutConfig, ShortcutMap};
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -17,14 +24,32 @@ pub struct AppConfig {
     log_level: LevelFilter,
 
     clear_interval: u32,
+
+    #[serde(skip)]
+    shortcut_map: ShortcutMap,
+    shortcuts: ShortcutConfig,
+
+    #[serde(skip)]
+    global_shortcut_map: GlobalShortcutMap,
+    global_shortcuts: GlobalShortcutConfig,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
+        let shortcuts = ShortcutConfig::default();
+        let shortcut_map: ShortcutMap = (&shortcuts).into();
+
+        let global_shortcuts = GlobalShortcutConfig::default();
+        let global_shortcut_map: GlobalShortcutMap = (&global_shortcuts).into();
+
         Self {
             pass_cli_path: AppConfig::DEFAULT_PASS_CLI_PATH.into(),
             log_level: LevelFilter::Info,
             clear_interval: 120,
+            shortcuts,
+            global_shortcuts,
+            shortcut_map,
+            global_shortcut_map,
         }
     }
 }
@@ -41,7 +66,9 @@ impl AppConfig {
         let builder = Config::builder().add_source(config_file);
 
         let config = builder.build()?;
-        let app_config: Self = config.try_deserialize()?;
+        let mut app_config: Self = config.try_deserialize()?;
+        app_config.shortcut_map = (&app_config.shortcuts).into();
+        app_config.global_shortcut_map = (&app_config.global_shortcuts).into();
 
         Ok(app_config)
     }
@@ -66,5 +93,17 @@ impl AppConfig {
 
     pub fn get_clear_interval(&self) -> u32 {
         self.clear_interval
+    }
+
+    pub fn get_shortcut_action(&self, shortcut: &Shortcut) -> Option<&ShortcutAction> {
+        self.shortcut_map.get(shortcut)
+    }
+
+    pub fn get_global_shortcuts(&self) -> Vec<Shortcut> {
+        self.global_shortcut_map.keys().cloned().collect()
+    }
+
+    pub fn get_global_shortcut_action(&self, shortcut: &Shortcut) -> Option<&GlobalShortcutAction> {
+        self.global_shortcut_map.get(shortcut)
     }
 }

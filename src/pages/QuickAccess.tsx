@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 import { Alert, AlertKind, Refresh, Lock } from "../components";
 import useWindowFocus from "../hooks/useWindowFocus";
-import { listen } from "@tauri-apps/api/event";
+import useShortcuts from "../hooks/useShortcuts";
 
 interface ItemRefLogin {
   type: "login";
@@ -46,6 +47,7 @@ export default function QuickAccess() {
 
   const [message, setMessage] = useState<{ kind: AlertKind; text: string } | undefined>(undefined);
 
+  const { keyEventToShortcut, getShortcutAction } = useShortcuts();
   const searchRef = useWindowFocus<HTMLInputElement>();
   const listRef = useRef(null);
 
@@ -56,43 +58,42 @@ export default function QuickAccess() {
     setMessage({ kind: "error", text });
   }
 
-  function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
-    if (e.ctrlKey) {
-      if (e.key == "c") {
+  function handleShortcutAction(action: string) {
+    switch (action) {
+      case "copy_primary":
+      case "copy_secondary":
+      case "copy_alt":
         if (!selectedRef) {
           setMessage({ kind: "info", text: "No item is selected" });
           return;
         }
 
-        setMessage(undefined);
-        if (e.altKey) {
-          invoke("copy_alt", { itemRef: selectedRef }).catch((reason) => {
-            setError(reason, "Failed to copy alt value");
-          });
-        } else {
-          invoke("copy_primary", { itemRef: selectedRef }).catch((reason) => {
-            setError(reason, "Failed to copy primary value");
-          });
-        }
-      } else if (e.key == "C") {
-        // prevents ctrl + shift + c from opening up developer tools on windows
-        e.preventDefault();
-
-        if (!selectedRef) {
-          setMessage({ kind: "info", text: "No item is selected" });
-          return;
-        }
-
-        setMessage(undefined);
-        invoke("copy_secondary", { itemRef: selectedRef }).catch((reason) => {
-          setError(reason, "Failed to copy secondary value");
+        invoke(action, { itemRef: selectedRef }).catch((reason) => {
+          setError(reason, `Failed to copy item: ${action}`);
         });
-      } else if (e.key == "r") {
-        refreshItems();
-      } else if (e.key == "l") {
+        break;
+      case "lock":
         lock();
-      }
+        break;
+      case "refresh_items":
+        refreshItems();
+        break;
+      default:
+        setError(`Unknown action: ${action}`, "");
+        break;
     }
+  }
+
+  async function handleKeyDown<T>(e: React.KeyboardEvent<T>) {
+    const shortcut = keyEventToShortcut(e);
+    if (!shortcut) return;
+
+    const action = await getShortcutAction(shortcut);
+    if (!action) return;
+
+    e.preventDefault();
+
+    handleShortcutAction(action);
   }
 
   function getItems() {

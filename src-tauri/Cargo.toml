@@ -20,6 +20,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-clipboard-manager = { git = "https://github.com/umtdg/plugins-workspace", branch = "feat-clipboard-exclude" }
 tauri-plugin-log = "2"
+tauri-plugin-global-shortcut = "2.3.1"
 tauri-plugin-single-instance = "2"
 tauri-plugin-shell = "2.3.5"
 aes-gcm = { version = "0.10.3", features = ["std"] }
@@ -39,6 +40,7 @@ thiserror = "2.0.18"
 tokio = { version = "1.51.1", default-features = false }
 totp-rs = { version = "5.7.1", features = ["otpauth", "zeroize"] }
 zeroize = { version = "1.8.2", features = ["derive", "alloc"] }
+global-hotkey = { version = "0.7.0", default-features = false, features = ["serde"] }
 
 [dev-dependencies]
 clippy = "0.0.302"
