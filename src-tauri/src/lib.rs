@@ -13,11 +13,11 @@ use crate::app::config::AppConfig;
 use crate::app::state::{AppState, CryptoState, ItemState, RuntimeState};
 use crate::app::tray::create_icon;
 use crate::commands::{
-    copy_alt, copy_primary, copy_secondary, get_items, init_crypto, is_first_launch, is_locked,
-    lock, get_shortcut_action, refresh_items, unlock,
+    copy_alt, copy_primary, copy_secondary, get_items, get_shortcut_action, init_crypto,
+    is_first_launch, is_locked, lock, refresh_items, unlock,
 };
 use crate::error::Result;
-use crate::handlers::{on_multiple_instance, on_window_event};
+use crate::handlers::{global_shortcut_handler, on_multiple_instance, on_window_event};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
@@ -45,11 +45,17 @@ pub fn run() -> Result<()> {
         .level(app_config.get_level_filter())
         .build();
 
+    let tauri_global_shortcut = tauri_plugin_global_shortcut::Builder::new()
+        .with_shortcuts(app_config.get_global_shortcuts())?
+        .with_handler(global_shortcut_handler)
+        .build();
+
     let builder = Builder::default()
         .plugin(tauri_log)
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(on_multiple_instance))
+        .plugin(tauri_global_shortcut)
         .on_window_event(on_window_event)
         .invoke_handler(tauri::generate_handler![
             copy_primary,

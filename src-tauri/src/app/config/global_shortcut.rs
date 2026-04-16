@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use tauri_plugin_global_shortcut::Shortcut;
 
@@ -13,11 +15,19 @@ pub struct GlobalShortcutConfig {
     show: Shortcut,
 }
 
+pub type GlobalShortcutMap = HashMap<Shortcut, GlobalShortcutAction>;
+
 impl Default for GlobalShortcutConfig {
     fn default() -> Self {
         // we accept that application panics here if parsing default shortcuts fail
         Self {
             show: "CmdOrCtrl+Alt+Space".parse().unwrap(),
         }
+    }
+}
+
+impl From<&GlobalShortcutConfig> for GlobalShortcutMap {
+    fn from(value: &GlobalShortcutConfig) -> Self {
+        GlobalShortcutMap::from([(value.show, GlobalShortcutAction::Show)])
     }
 }

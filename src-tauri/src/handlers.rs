@@ -1,8 +1,10 @@
 use clap::Parser;
 use tauri::{AppHandle, Emitter, Manager, Runtime, State, WebviewWindow, Window, WindowEvent};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_global_shortcut::{Shortcut, ShortcutEvent, ShortcutState};
 
 use crate::app::cli::{Cli, Command};
+use crate::app::config::AppConfig;
 use crate::app::state::ItemState;
 use crate::commands::lock;
 use crate::error::{Error, Result};
@@ -89,4 +91,24 @@ pub fn on_multiple_instance<R: Runtime>(app: &AppHandle<R>, args: Vec<String>, _
     }
 }
 
-pub fn global_shortcut_handler() {}
+pub fn global_shortcut_handler<R: Runtime>(
+    app: &AppHandle<R>,
+    shortcut: &Shortcut,
+    event: ShortcutEvent,
+) {
+    let app_config: State<'_, AppConfig> = app.state();
+    if event.state() != ShortcutState::Pressed {
+        return;
+    }
+
+    log::debug!("Got shortcut: {}", shortcut);
+    if let Some(action) = app_config.get_global_shortcut_action(shortcut) {
+        log::debug!("Shortcut action: {:?}", action);
+        match action {
+            crate::app::config::GlobalShortcutAction::Show => {
+                log::debug!("Global shortcut for show detected");
+                show_window(app).expect("failed to show main window");
+            }
+        }
+    }
+}
