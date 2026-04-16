@@ -1,9 +1,11 @@
 use std::collections::{HashMap, HashSet};
+use std::path::Path;
 use std::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
 
 use crate::app::crypto::{Dek, EncryptedData};
+use crate::app::state::AppState;
 use crate::error::{Error, Result};
 use crate::impl_state;
 use crate::item::{Item, ItemRef};
@@ -30,6 +32,20 @@ impl_state!(ItemState, "items.json");
 impl ItemState {
     pub fn new() -> Self {
         Self::default()
+    }
+
+    pub fn load_or_new<P: AsRef<Path>>(path: P) -> Result<Self> {
+        // unwrap is safe since we return Some() from the callback of load_or
+        let item_state = Self::load_or(path.as_ref(), |path| {
+            log::info!("Creating empty item state");
+            let item_state = Self::new();
+            item_state.save(path)?;
+
+            Ok(Some(item_state))
+        })?
+        .unwrap();
+
+        Ok(item_state)
     }
 
     pub fn is_locked(&self) -> Result<bool> {

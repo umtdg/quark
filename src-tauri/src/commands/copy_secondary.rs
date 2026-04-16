@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use zeroize::Zeroize;
 
@@ -11,8 +11,8 @@ use crate::handlers::hide_window;
 use crate::item::ItemRef;
 
 #[tauri::command]
-pub async fn copy_secondary(
-    app: AppHandle,
+pub async fn copy_secondary<R: Runtime>(
+    app: AppHandle<R>,
     runtime_state: State<'_, RuntimeState>,
     item_state: State<'_, ItemState>,
     config: State<'_, AppConfig>,
