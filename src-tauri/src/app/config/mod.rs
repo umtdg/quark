@@ -1,19 +1,19 @@
 mod global_shortcut;
 mod shortcut;
 
-use std::{collections::HashMap, path::Path};
-use tauri_plugin_global_shortcut::Shortcut;
+use std::path::Path;
 
 use config::{Config, File, FileFormat};
 use log::LevelFilter;
 use serde::Deserialize;
+use tauri_plugin_global_shortcut::Shortcut;
 
 use crate::app::cli::Cli;
 use crate::error::Result;
 use crate::serde::log_level;
 
 pub use global_shortcut::{GlobalShortcutAction, GlobalShortcutConfig};
-pub use shortcut::{ShortcutAction, ShortcutConfig};
+pub use shortcut::{ShortcutAction, ShortcutConfig, ShortcutMap};
 
 #[derive(Debug, Deserialize)]
 #[serde(default)]
@@ -24,18 +24,26 @@ pub struct AppConfig {
     log_level: LevelFilter,
 
     clear_interval: u32,
+
     shortcuts: ShortcutConfig,
     global_shortcuts: GlobalShortcutConfig,
+
+    #[serde(skip)]
+    shortcut_map: ShortcutMap,
 }
 
 impl Default for AppConfig {
     fn default() -> Self {
+        let shortcuts = ShortcutConfig::default();
+        let shortcut_map: ShortcutMap = (&shortcuts).into();
+
         Self {
             pass_cli_path: AppConfig::DEFAULT_PASS_CLI_PATH.into(),
             log_level: LevelFilter::Info,
             clear_interval: 120,
-            shortcuts: ShortcutConfig::default(),
+            shortcuts,
             global_shortcuts: GlobalShortcutConfig::default(),
+            shortcut_map,
         }
     }
 }
@@ -52,7 +60,8 @@ impl AppConfig {
         let builder = Config::builder().add_source(config_file);
 
         let config = builder.build()?;
-        let app_config: Self = config.try_deserialize()?;
+        let mut app_config: Self = config.try_deserialize()?;
+        app_config.shortcut_map = (&app_config.shortcuts).into();
 
         Ok(app_config)
     }
@@ -79,7 +88,7 @@ impl AppConfig {
         self.clear_interval
     }
 
-    pub fn get_shortcut_map(&self) -> HashMap<Shortcut, ShortcutAction> {
-        self.shortcuts.into_map()
+    pub fn get_shortcut_action(&self, shortcut: &Shortcut) -> Option<&ShortcutAction> {
+        self.shortcut_map.get(shortcut)
     }
 }

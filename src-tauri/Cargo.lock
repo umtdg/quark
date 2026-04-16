@@ -3657,6 +3657,7 @@ dependencies = [
  "clippy",
  "config",
  "dirs 6.0.0",
+ "global-hotkey",
  "log",
  "nucleo-matcher",
  "rand 0.10.0",

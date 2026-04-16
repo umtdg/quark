@@ -56,8 +56,8 @@ pub enum Error {
     #[error("TOTP error: {0}")]
     Totp(String),
 
-    #[error("Shortcut error: {0}")]
-    Shortcut(String),
+    #[error("Invalid shortcut: {0}")]
+    ShortcutParse(#[from] global_hotkey::hotkey::HotKeyParseError),
 }
 
 impl serde::Serialize for Error {

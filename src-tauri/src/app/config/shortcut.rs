@@ -19,30 +19,32 @@ pub struct ShortcutConfig {
     copy_primary: Shortcut,
     copy_secondary: Shortcut,
     copy_alt: Shortcut,
-    lock: Shortcut,
     refresh_items: Shortcut,
+    lock: Shortcut,
 }
+
+pub type ShortcutMap = HashMap<Shortcut, ShortcutAction>;
 
 impl Default for ShortcutConfig {
     fn default() -> Self {
         Self {
             copy_primary: "CmdOrCtrl+C".parse().unwrap(),
             copy_secondary: "CmdOrCtrl+Shift+C".parse().unwrap(),
-            copy_alt: "Cmd+Alt+C".parse().unwrap(),
-            lock: "CmdOrCtrl+l".parse().unwrap(),
+            copy_alt: "CmdOrCtrl+Alt+C".parse().unwrap(),
             refresh_items: "CmdOrCtrl+r".parse().unwrap(),
+            lock: "CmdOrCtrl+l".parse().unwrap(),
         }
     }
 }
 
-impl ShortcutConfig {
-    pub fn into_map(&self) -> HashMap<Shortcut, ShortcutAction> {
-        HashMap::from([
-            (self.copy_primary, ShortcutAction::CopyPrimary),
-            (self.copy_secondary, ShortcutAction::CopySecondary),
-            (self.copy_alt, ShortcutAction::CopyAlt),
-            (self.lock, ShortcutAction::Lock),
-            (self.refresh_items, ShortcutAction::RefreshItems),
+impl From<&ShortcutConfig> for ShortcutMap {
+    fn from(value: &ShortcutConfig) -> Self {
+        ShortcutMap::from([
+            (value.copy_primary, ShortcutAction::CopyPrimary),
+            (value.copy_secondary, ShortcutAction::CopySecondary),
+            (value.copy_alt, ShortcutAction::CopyAlt),
+            (value.refresh_items, ShortcutAction::RefreshItems),
+            (value.lock, ShortcutAction::Lock),
         ])
     }
 }

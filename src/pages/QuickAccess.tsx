@@ -47,7 +47,7 @@ export default function QuickAccess() {
 
   const [message, setMessage] = useState<{ kind: AlertKind; text: string } | undefined>(undefined);
 
-  const { shortcutMap, keyEventToShortcut } = useShortcuts();
+  const { keyEventToShortcut, getShortcutAction } = useShortcuts();
   const searchRef = useWindowFocus<HTMLInputElement>();
   const listRef = useRef(null);
 
@@ -88,7 +88,7 @@ export default function QuickAccess() {
     const shortcut = keyEventToShortcut(e);
     if (!shortcut) return;
 
-    const action = shortcutMap[shortcut];
+    const action = await getShortcutAction(shortcut);
     if (!action) return;
 
     e.preventDefault();

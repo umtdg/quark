@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 export type ShortcutAction =
@@ -8,15 +7,12 @@ export type ShortcutAction =
   | "refresh_items"
   | "lock";
 
-export type ShortcutMap = Record<string, ShortcutAction>;
-
 interface ShortcutState<T> {
-  shortcutMap: ShortcutMap;
   keyEventToShortcut: (e: React.KeyboardEvent<T>) => string | null;
+  getShortcutAction: (shortcut: string) => Promise<ShortcutAction | null>;
 }
 
 export default function useShortcuts<T>(): ShortcutState<T> {
-  const [shortcutMap, setShortcutMap] = useState<ShortcutMap>({});
   const commonKeyCodes: Record<string, string> = {
     Escape: "Escape",
     Enter: "Enter",
@@ -73,9 +69,9 @@ export default function useShortcuts<T>(): ShortcutState<T> {
     return parts.join("+").toLowerCase();
   }
 
-  useEffect(() => {
-    invoke<ShortcutMap>("get_shortcuts").then(setShortcutMap);
-  }, []);
+  async function getShortcutAction(shortcut: string): Promise<ShortcutAction | null> {
+    return invoke<ShortcutAction | null>("get_shortcut_action", { shortcut });
+  }
 
-  return { shortcutMap, keyEventToShortcut };
+  return { keyEventToShortcut, getShortcutAction };
 }
