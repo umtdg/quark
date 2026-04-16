@@ -18,7 +18,9 @@ use crate::commands::{
     is_first_launch, is_locked, lock, refresh_items, unlock,
 };
 use crate::error::Result;
-use crate::handlers::{global_shortcut_handler, on_multiple_instance, on_window_event};
+use crate::handlers::{
+    global_shortcut_handler, on_multiple_instance, on_window_event, print_info, print_version,
+};
 
 fn build_log<R: Runtime>(app_config: &AppConfig) -> TauriPlugin<R> {
     tauri_plugin_log::Builder::new()
@@ -116,10 +118,12 @@ pub fn run() -> Result<()> {
     // if we end up here, it means that single instance plugin didn't pick up
     // and this is the first launch of the app
 
-    if cli.command.unwrap_or(app::cli::Command::Show) != app::cli::Command::Show {
-        eprintln!("There is no instance of the application running");
-        return Ok(());
-    }
+    match cli.command.unwrap_or(app::cli::Command::Show) {
+        app::cli::Command::Version => print_version(app.handle()),
+        app::cli::Command::Info => print_info(app.handle()),
+        app::cli::Command::Show => launch_app(app, app_config, runtime_state)?,
+        _ => eprintln!("There is no instance of the application running"),
+    };
 
-    launch_app(app, app_config, runtime_state)
+    Ok(())
 }

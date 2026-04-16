@@ -55,6 +55,17 @@ pub fn clear_clipboard<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
     Ok(())
 }
 
+pub fn print_version<R: Runtime>(app: &AppHandle<R>) {
+    println!("{}", app.package_info().version);
+}
+
+pub fn print_info<R: Runtime>(app: &AppHandle<R>) {
+    let package_info = app.package_info();
+    println!("{} {}", package_info.name, package_info.version);
+    println!("Authors: {}", package_info.authors);
+    println!("Description: {}", package_info.description);
+}
+
 pub fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
     match event {
         WindowEvent::CloseRequested { api, .. } => {
@@ -77,17 +88,11 @@ pub fn on_multiple_instance<R: Runtime>(app: &AppHandle<R>, args: Vec<String>, _
 
     let args = Cli::parse_from(args);
     match args.command.unwrap_or(Command::Show) {
-        Command::Show => {
-            show_window(app).expect("failed to show main window");
-        }
-        Command::Lock => {
-            lock_app(app);
-        }
-        Command::Quit => {
-            log::info!("Quitting application");
-
-            app.exit(0);
-        }
+        Command::Show => show_window(app).expect("failed to show main window"),
+        Command::Lock => lock_app(app),
+        Command::Quit => app.exit(0),
+        Command::Version => print_version(app),
+        Command::Info => {}
     }
 }
 
