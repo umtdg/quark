@@ -23,7 +23,8 @@ knowledge, I've only tried to fix edges and color stains to make it look smoothe
 
 ### Primary Copy
 
-Primary copy action is bound to `Ctrl-C` and copies the following by item type:
+Primary copy action is bound to `Ctrl+C` or `Cmd+C` and copies the following by
+item type:
 
 - **Login**: `username` if it is not empty, `email` otherwise. This is because
 pass-cli provides us with both.
@@ -31,16 +32,16 @@ pass-cli provides us with both.
 
 ### Secondary Copy
 
-Secondary copy action is bound to `Ctrl-Shift-C` and copies the following by
-item type:
+Secondary copy action is bound to `Ctrl+Shift+C` or `Cmd+Shift+C` and copies
+the following by item type:
 
 - **Login**: Password
 - **Credit Card**: Verification number
 
 ### Alternative Copy
 
-This is currently not implemented, and planned shortcut is `Ctrl-Alt-C` with the
-following copy table:
+This is currently not implemented, and planned shortcut is `Ctrl+Alt+C` or
+`Cmd+Option+C` with the following copy table:
 
 - **Login**: TOTP, pass-cli gives us an `otpauth://` uri for the TOTP and the
 actual TOTP value needs to be recieved from the otpauth uri
@@ -79,14 +80,21 @@ log_level = "info"
 clear_interval = 120
 
 # Define shortcuts that are effective when the application is focused.
-# Modifiers and key are separated by `+`.
+#
+# Accepted modifiers are:
+# - `Ctrl`: Matches Ctrl key on Linux/Windows
+# - `Cmd`: Matches Command key on MacOS
+# - `CmdOrCtrl`: Matches both Command or Ctrl, useful for platform agnostic keys
+#   that should match Ctrl on Linux/Windows and Command on MacOS
+# - `Alt` or `Option`: Matches either Alt or Option and are interchangeable
+# - `Shift`: Matches Shift
 #
 # Supported actions:
-# "copy_primary": copies primary value of the selected item
-# "copy_secondary": copies secondary value of the selected item
-# "copy_alt": copies alternative/tertiary value of the selected item
-# "lock": locks the application
-# "refresh_items": fetches items from pass-cli and updates the item store
+# - `copy_primary`: copies primary value of the selected item
+# - `copy_secondary`: copies secondary value of the selected item
+# - `copy_alt`: copies alternative/tertiary value of the selected item
+# - `lock`: locks the application
+# - `refresh_items`: fetches items from pass-cli and updates the item store
 #
 # See [Copy Actions](#copy-actions) for details on what `copy_*` actions actually
 # copy
@@ -98,9 +106,11 @@ lock = "CmdOrCtrl+l"
 refresh_items = "CmdOrCtrl+r"
 
 # Define global shortcuts that are effective even when the application is
-# not focused.
+# not focused. See `[shortcuts]` to see how modifiers work
+#
+# These shortcuts currently do not work on Linux systems using Wayland
 [global_shortcuts]
-show = "CmdOrCtrl+Alt+Space"
+show = "CmdOrCtrl+Shift+Space"
 ```
 
 All of the configuration options are supported through the CLI and options
