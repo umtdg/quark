@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Runtime, State};
 use zeroize::Zeroize;
 
 use crate::app::crypto::{Dek, Kek};
@@ -6,8 +6,8 @@ use crate::app::state::{CryptoState, ItemState};
 use crate::error::{Error, Result};
 
 #[tauri::command]
-pub async fn unlock(
-    app_handle: AppHandle,
+pub async fn unlock<R: Runtime>(
+    app_handle: AppHandle<R>,
     item_state: State<'_, ItemState>,
     crypto_state: State<'_, CryptoState>,
     mut password: String,

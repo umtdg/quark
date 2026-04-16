@@ -6,7 +6,8 @@ pub mod item;
 pub mod serde;
 
 use clap::Parser;
-use tauri::{App, Builder, Context, Manager};
+use tauri::plugin::TauriPlugin;
+use tauri::{App, Builder, Context, Manager, Runtime};
 
 use crate::app::cli::Cli;
 use crate::app::config::AppConfig;
@@ -19,8 +20,8 @@ use crate::commands::{
 use crate::error::Result;
 use crate::handlers::{global_shortcut_handler, on_multiple_instance, on_window_event};
 
-fn build_app(context: Context, app_config: &AppConfig) -> Result<App> {
-    let tauri_log = tauri_plugin_log::Builder::new()
+fn build_log<R: Runtime>(app_config: &AppConfig) -> TauriPlugin<R> {
+    tauri_plugin_log::Builder::new()
         .targets([tauri_plugin_log::Target::new(
             tauri_plugin_log::TargetKind::LogDir { file_name: None },
         )])
@@ -28,19 +29,23 @@ fn build_app(context: Context, app_config: &AppConfig) -> Result<App> {
         .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepSome(2))
         .timezone_strategy(tauri_plugin_log::TimezoneStrategy::UseLocal)
         .level(app_config.get_level_filter())
-        .build();
+        .build()
+}
 
-    let tauri_global_shortcut = tauri_plugin_global_shortcut::Builder::new()
+fn build_global_shortcut<R: Runtime>(app_config: &AppConfig) -> Result<TauriPlugin<R>> {
+    Ok(tauri_plugin_global_shortcut::Builder::new()
         .with_shortcuts(app_config.get_global_shortcuts())?
         .with_handler(global_shortcut_handler)
-        .build();
+        .build())
+}
 
-    let builder = Builder::default()
-        .plugin(tauri_log)
+fn build_app<R: Runtime>(context: Context<R>, app_config: &AppConfig) -> Result<App<R>> {
+    Builder::<R>::new()
+        .plugin(build_log(app_config))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(on_multiple_instance))
-        .plugin(tauri_global_shortcut)
+        .plugin(build_global_shortcut(app_config)?)
         .on_window_event(on_window_event)
         .invoke_handler(tauri::generate_handler![
             copy_primary,
@@ -54,16 +59,12 @@ fn build_app(context: Context, app_config: &AppConfig) -> Result<App> {
             is_locked,
             is_first_launch,
             get_shortcut_action,
-        ]);
-
-    builder.build(context).map_err(Into::into)
+        ])
+        .build(context)
+        .map_err(Into::into)
 }
 
-fn launch_app(
-    app: App,
-    app_config: AppConfig,
-    runtime_state: RuntimeState,
-) -> Result<()> {
+fn launch_app(app: App, app_config: AppConfig, runtime_state: RuntimeState) -> Result<()> {
     log::info!("Launching application with config: {:?}", app_config);
 
     let _tray_icon = create_icon(app.handle())?;
@@ -95,6 +96,7 @@ fn launch_app(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
+    // this parse both validates the command and allows us to get the config path from cli
     let cli = Cli::parse();
 
     let context = tauri::generate_context!();

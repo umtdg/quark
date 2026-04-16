@@ -1,12 +1,12 @@
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, Runtime, State};
 use zeroize::Zeroize;
 
 use crate::app::state::{AppState, CryptoState, ItemState, RuntimeState};
 use crate::error::Result;
 
 #[tauri::command]
-pub async fn init_crypto(
-    app_handle: AppHandle,
+pub async fn init_crypto<R: Runtime>(
+    app_handle: AppHandle<R>,
     runtime_state: State<'_, RuntimeState>,
     item_state: State<'_, ItemState>,
     mut password: String,

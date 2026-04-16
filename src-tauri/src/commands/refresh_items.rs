@@ -1,4 +1,4 @@
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Runtime, State};
 
 use crate::app::config::AppConfig;
 use crate::app::shell::{get_vault_items, get_vaults};
@@ -6,8 +6,8 @@ use crate::app::state::{AppState, ItemState, RuntimeState};
 use crate::error::{Error, Result};
 
 #[tauri::command]
-pub async fn refresh_items(
-    app: AppHandle,
+pub async fn refresh_items<R: Runtime>(
+    app: AppHandle<R>,
     runtime_state: State<'_, RuntimeState>,
     item_state: State<'_, ItemState>,
     config: State<'_, AppConfig>,
@@ -22,8 +22,7 @@ pub async fn refresh_items(
 
     let vaults = get_vaults(&app, pass_cli_path).await?;
     for vault in vaults {
-        let vault_items =
-            get_vault_items(&app, pass_cli_path, &vault.share_id).await?;
+        let vault_items = get_vault_items(&app, pass_cli_path, &vault.share_id).await?;
 
         log::debug!("Adding vault items to stored items");
         item_state.extend(vault_items)?;
