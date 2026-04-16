@@ -30,7 +30,7 @@ function getItemInfo(itemRef: ItemRef): string {
   switch (itemRef.data.type) {
     case "login":
       if (itemRef.data.urls.length > 0) {
-        return `${itemRef.data.login} - ${itemRef.data.urls.join("-")}`;
+        return `${itemRef.data.login} - ${itemRef.data.urls.join(", ")}`;
       } else {
         return itemRef.data.login;
       }
@@ -194,7 +194,7 @@ export default function QuickAccess() {
               }
             >
               <div className="text-sm font-medium">{item.title}</div>
-              <div className="text-xs text-text/50">{getItemInfo(item)}</div>
+              <div className="text-xs text-text/50 line-clamp-1">{getItemInfo(item)}</div>
             </li>
           );
         })}

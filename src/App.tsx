@@ -45,7 +45,7 @@ export default function App() {
       className="h-screen w-full flex flex-col items-center justify-center bg-bg text-text"
     >
       {isFirstLaunch ? <Setup /> : isLocked ? <LockScreen /> : <QuickAccess />}
-      <span className="flex-end self-start p-1 text-xs text-text/60">
+      <span className="fixed bottom-1 right-1 text-xs text-text/60">
         {name ?? "Unknown"} v{version ?? "0.0.0"}
       </span>
     </div>
