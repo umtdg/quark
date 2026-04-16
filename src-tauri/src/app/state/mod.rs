@@ -19,6 +19,11 @@ pub trait AppState: Sized {
     fn save<P>(&self, path: P) -> Result<()>
     where
         P: AsRef<Path>;
+
+    fn load_or<F, P>(path: P, f: F) -> Result<Option<Self>>
+    where
+        F: Fn(P) -> Result<Option<Self>> + Send + Sync,
+        P: AsRef<Path>;
 }
 
 #[macro_export]
@@ -61,6 +66,22 @@ macro_rules! impl_state {
                 std::fs::write(path, state_json)?;
 
                 Ok(())
+            }
+
+            fn load_or<F, P>(path: P, f: F) -> $crate::error::Result<Option<Self>>
+            where
+                F: Fn(P) -> $crate::error::Result<Option<Self>> + Send + Sync,
+                P: AsRef<std::path::Path>,
+            {
+                let state = match Self::load(path.as_ref())? {
+                    Some(state) => {
+                        log::info!("Loaded existing state from {}", Self::FILE_NAME);
+                        Some(state)
+                    }
+                    None => f(path)?,
+                };
+
+                Ok(state)
             }
         }
     };

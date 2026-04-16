@@ -83,33 +83,17 @@ pub fn run() -> Result<()> {
 
     let _tray_icon = create_icon(app_handle)?;
 
+    // unwrap is safe since we return Some() from the callback of load_or
     let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
-    let item_state = match ItemState::load(&item_state_path)? {
-        Some(item_state) => {
-            log::info!("Loaded item state from existing file");
-            item_state
-        }
-        None => {
-            log::info!("Creating empty item state");
-            let item_state = ItemState::new();
-            item_state.save(item_state_path)?;
-
-            item_state
-        }
-    };
+    let item_state = ItemState::load_or_new(item_state_path);
 
     let crypto_state_path = runtime_state.data_dir.join(CryptoState::FILE_NAME);
-    let crypto_state: Option<CryptoState> = match CryptoState::load(&crypto_state_path)? {
-        Some(crypto_state) => {
-            log::info!("Loaded crypto state from existing file");
-            Some(crypto_state)
-        }
-        None => {
-            log::info!("No crypto state is found. Setting first_launch = true");
-            runtime_state.set_first_launch(true)?;
-            None
-        }
-    };
+    let crypto_state: Option<CryptoState> = CryptoState::load_or(&crypto_state_path, |_| {
+        log::info!("No crypto state is found. Setting first_launch = true");
+        runtime_state.set_first_launch(true)?;
+
+        Ok(None)
+    })?;
 
     app.manage(app_config);
     app.manage(runtime_state);
