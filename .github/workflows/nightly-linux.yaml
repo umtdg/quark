@@ -1,0 +1,15 @@
+name: "Create nightly build for Linux"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+      timezone: "Europe/Istanbul"
+
+jobs:
+  linux:
+    secrets: inherit
+    uses: ./.github/workflows/nightly.yaml
+    with:
+      platform: ubuntu-22.04
+      build-counter-file: .github/nightly-build-number/linux

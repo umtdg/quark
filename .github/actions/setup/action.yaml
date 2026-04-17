@@ -1,16 +1,16 @@
-name: 'setup'
-description: 'Common setup for other workflows'
+name: "Setup"
+description: "Common setup before the actual tauri build"
 
 inputs:
   platform:
     required: true
-    description: 'Runner platform'
+    description: "Runner platform"
 
 runs:
-  using: 'composite'
+  using: "composite"
   steps:
     - name: install dependencies (ubuntu only)
-      if: inputs.platform == 'ubuntu-22.04'
+      if: inputs.platform == "ubuntu-22.04"
       shell: bash
       run: |
         sudo apt-get update
@@ -24,19 +24,19 @@ runs:
       uses: actions/setup-node@v6
       with:
         node-version: lts/*
-        cache: 'pnpm'
+        cache: "pnpm"
 
     - name: install Rust stable
       uses: dtolnay/rust-toolchain@stable
       with:
         # Those targets are only used on macos runners so it's in an `if` to
         # slightly speed up windows and linux builds.
-        targets: ${{ inputs.platform == 'macos-latest' && 'aarch64-apple-darwin' || '' }}
+        targets: ${{ inputs.platform == "macos-latest" && "aarch64-apple-darwin" || "" }}
 
     - name: Rust cache
       uses: swatinem/rust-cache@v2
       with:
-        workspaces: './src-tauri -> target'
+        workspaces: "./src-tauri -> target"
 
     - name: install frontend dependencies
       shell: bash

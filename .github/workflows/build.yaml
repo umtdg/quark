@@ -1,17 +1,16 @@
-name: 'build'
-description: 'Build and test on PR'
+name: "Build and test on PR"
 
 on:
   workflow_dispatch:
   pull_request:
     paths:
-      - 'src/**'
-      - 'src-tauri/**'
-      - 'index.html'
-      - 'package.json'
-      - 'pnpm-lock.json'
-      - 'tsconfig.json'
-      - 'vite.config.ts'
+      - "src/**"
+      - "src-tauri/**"
+      - "index.html"
+      - "package.json"
+      - "pnpm-lock.json"
+      - "tsconfig.json"
+      - "vite.config.ts"
 
 jobs:
   build:
@@ -19,23 +18,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+          - platform: "ubuntu-22.04"
+            args: ""
+          - platform: "windows-latest"
+            args: ""
 
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup
-        with:
-          platform: ${{ matrix.platform }}
-
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: ${{ matrix.args }}
+    uses: ./.github/workflows/tauri-build.yaml
+    secrets: inherit
+    with:
+      platform: ${{ matrix.platform }}
+      args: ${{ matrix.args }}

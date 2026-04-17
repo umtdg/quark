@@ -1,0 +1,16 @@
+name: "Create nightly build for ARM-based MacOS"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+      timezone: "Europe/Istanbul"
+
+jobs:
+  macos-aarch64:
+    secrets: inherit
+    uses: ./.github/workflows/nightly.yaml
+    with:
+      platform: macos-latest
+      args: "--target aarch64-apple-darwin"
+      build-counter-file: .github/nightly-build-number/macos-aarch64

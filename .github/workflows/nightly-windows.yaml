@@ -1,0 +1,15 @@
+name: "Create nightly build for Windows"
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+      timezone: "Europe/Istanbul"
+
+jobs:
+  windows:
+    secrets: inherit
+    uses: ./.github/workflows/nightly.yaml
+    with:
+      platform: windows-latest
+      build-counter-file: .github/nightly-build-number/windows

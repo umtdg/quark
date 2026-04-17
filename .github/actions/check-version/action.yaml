@@ -1,0 +1,22 @@
+name: "Check version"
+description: "Check a given version against the version specified in tauri.conf.json"
+
+inputs:
+  version:
+    required: true
+    description: "Version to check"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check version
+      shell: bash
+      run: |
+        TAG='${{ inputs.version }}'
+        TAURI=$(jq -r '.version' src-tauri/tauri.conf.json)
+
+        MISMATCH=0
+        [ "$TAURI" != "$TAG" ] && echo "tauri.conf.json: $TAURI != $TAG" && MISMATCH=1
+
+        [ "$MISMATCH" -eq 1 ] && exit 1
+        echo "All versions match the tag $TAG"
