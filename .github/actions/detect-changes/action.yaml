@@ -3,14 +3,12 @@ description: "Check for changes in files and folders that require rebuild"
 
 inputs:
   since:
-    type: string
     description: "Time range for git log (e.g. '24 hours ago')"
     required: false
     default: "24 hours ago"
 
 outputs:
   changed:
-    type: string
     description: "Whether changes were detected or not ('true' or 'false')"
     value: ${{ steps.detect-changes.outputs.changed }}
 
@@ -19,6 +17,7 @@ runs:
   steps:
     - name: Check for changes in files and folders that requires rebuild
       id: detect-changes
+      shell: bash
       run: |
         FILE_LIST=(
           src
