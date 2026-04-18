@@ -7,6 +7,10 @@ on:
         type: string
         required: true
         description: "Target platform to build on"
+      status-target:
+        type: string
+        required: true
+        description: "Status key suffix (linux/windows/macos-aarch64)"
       args:
         type: string
         required: false
@@ -47,11 +51,26 @@ on:
         required: false
         description: "Whether to auto-generate release notes"
         default: false
+    outputs:
+      status-linux:
+        description: "Linux build status"
+        value: ${{ jobs.build.outputs.status-linux }}
+      status-windows:
+        description: "Windows build status"
+        value: ${{ jobs.build.outputs.status-windows }}
+      status-macos-aarch64:
+        description: "MacOS ARM build status"
+        value: ${{ jobs.build.outputs.status-macos-aarch64 }}
 
 jobs:
   build:
     permissions:
       contents: write
+
+    outputs:
+      status-linux: ${{ steps.set-status.outputs.status-linux }}
+      status-windows: ${{ steps.set-status.outputs.status-windows }}
+      status-macos-aarch64: ${{ steps.set-status.outputs.status-macos-aarch64 }}
 
     runs-on: ${{ inputs.platform }}
 
@@ -80,3 +99,22 @@ jobs:
           prerelease: ${{ inputs.nightly }}
           generateReleaseNotes: ${{ inputs.generateReleaseNotes }}
           args: ${{ inputs.args }}
+
+      - name: Set per-platform status output
+        id: set-status
+        if: always()
+        shell: bash
+        run: |
+          status='false'
+          [ '${{ job.status }}' = 'success' ] && status='true'
+
+          status_target='${{ inputs.status-target }}'
+          case "$status_target" in
+            linux|windows|macos-aarch64)
+              echo "status-$status_target=$status" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported status-target: $status_target" >&2
+              exit 1
+              ;;
+          esac

@@ -20,13 +20,17 @@ jobs:
         include:
           - platform: "macos-latest"
             args: "--target aarch64-apple-darwin"
+            status-target: "macos-aarch64"
           - platform: "ubuntu-22.04"
             args: ""
+            status-target: "linux"
           - platform: "windows-latest"
             args: ""
+            status-target: "windows"
 
     uses: ./.github/workflows/tauri-build.yaml
     secrets: inherit
     with:
       platform: ${{ matrix.platform }}
+      status-target: ${{ matrix.status-target }}
       args: ${{ matrix.args }}

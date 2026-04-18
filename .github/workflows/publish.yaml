@@ -1,17 +1,10 @@
 name: "Publish - Common"
 
 on:
-  workflow_call:
-    inputs:
-      platform:
-        type: string
-        required: true
-        description: "Target platform to publish on"
-      args:
-        type: string
-        required: false
-        description: "Additional arguments passed to tauri-action"
-        default: ""
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
 
 jobs:
   prepare:
@@ -27,15 +20,55 @@ jobs:
   publish:
     needs: prepare
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+            status-target: "macos-aarch64"
+          - platform: "ubuntu-22.04"
+            args: ""
+            status-target: "linux"
+          - platform: "windows-latest"
+            args: ""
+            status-target: "windows"
+
     permissions:
       contents: write
 
-    uses: ./.github/workflows/tauri-build.yaml
     secrets: inherit
+    uses: ./.github/workflows/tauri-build.yaml
     with:
-      platform: ${{ inputs.platform }}
-      args: ${{ inputs.args }}
+      platform: ${{ matrix.platform }}
+      status-target: ${{ matrix.status-target }}
+      args: ${{ matrix.args }}
       tagName: v__VERSION__
       releaseName: "Quark v__VERSION__"
       releaseBody: "See the assets to download this version and install"
       generateReleaseNotes: true
+
+  update-badges:
+    needs:
+      - prepare
+      - publish
+    if: always()
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: "linux"
+          - target: "windows"
+          - target: "macos-aarch64"
+
+    secrets:
+      gist_id: ${{ secrets.BADGE_GIST_ID }}
+      gist_token: ${{ secrets.BADGE_GIST_TOKEN }}
+
+    uses: ./.github/workflows/update-badges.yaml
+    with:
+      channel: "release"
+      enabled: ${{ needs.prepare.result == 'success' && needs.publish.result != 'skipped' && needs.publish.result != 'cancelled' }}
+      target: ${{ matrix.target }}
+      status: ${{ needs.publish.outputs[format('status-{0}', matrix.target)] }}
