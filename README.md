@@ -1,14 +1,10 @@
 # Proton Pass Quick Access
 
-![Nightly - Linux](https://github.com/umtdg/quark/actions/workflows/nightly-linux.yaml/badge.svg)
-![Nightly - Windows](https://github.com/umtdg/quark/actions/workflows/nightly-windows.yaml/badge.svg)
-![Nightly - MacOS ARM](https://github.com/umtdg/quark/actions/workflows/nightly-macos-aarch64.yaml/badge.svg)
-
----
-
-![Release - Linux](https://github.com/umtdg/quark/actions/workflows/publish-linux.yaml/badge.svg)
-![Release - Windows](https://github.com/umtdg/quark/actions/workflows/publish-windows.yaml/badge.svg)
-![Release - MacOS ARM](https://github.com/umtdg/quark/actions/workflows/publish-macos-aarch64.yaml/badge.svg)
+| Platform  | Nightly | Release |
+|-----------|---------|---------|
+| Linux     | ![Nightly - Linux](github.com/umtdg/quark/actions/workflows/nightly-linux.yaml/badge.svg) | ![Release - Linux](https://github.com/umtdg/quark/actions/workflows/publish-linux.yaml/badge.svg) |
+| Windows   | ![Nightly - Windows](https://github.com/umtdg/quark/actions/workflows/nightly-windows.yaml/badge.svg) | ![Release - Windows](https://github.com/umtdg/quark/actions/workflows/publish-windows.yaml/badge.svg) |
+| MacOS ARM | ![Nightly - MacOS ARM](https://github.com/umtdg/quark/actions/workflows/nightly-macos-aarch64.yaml/badge.svg) | ![Release - MacOS ARM](https://github.com/umtdg/quark/actions/workflows/publish-macos-aarch64.yaml/badge.svg) |
 
 Quick access application for Proton Pass, similar to 1Password Quick Access,
 using `pass-cli`.
