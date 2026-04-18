@@ -1,4 +1,4 @@
-name: "Build and test on PR"
+name: "Build for PR"
 
 on:
   workflow_dispatch:

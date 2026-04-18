@@ -1,4 +1,4 @@
-name: "Create release build for ARM-based MacOS"
+name: "Publish - MacOS ARM"
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: "Create nightly build for ARM-based MacOS"
+name: "Nightly - MacOS ARM"
 
 on:
   workflow_dispatch:

@@ -1,4 +1,4 @@
-name: "Common workflow for publishing to a specific target"
+name: "Publish - Common"
 
 on:
   workflow_call:

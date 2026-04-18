@@ -1,4 +1,4 @@
-name: "Create nightly build for Linux"
+name: "Nightly - Linux"
 
 on:
   workflow_dispatch:

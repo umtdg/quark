@@ -1,4 +1,4 @@
-name: "Common workflow for building with Tauri"
+name: "Tauri Build"
 
 on:
   workflow_call:

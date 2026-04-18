@@ -1,4 +1,4 @@
-name: "Common workflow for building nightly versions for a specific target"
+name: "Nightly - Common"
 
 on:
   workflow_call:

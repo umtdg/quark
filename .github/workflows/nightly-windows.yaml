@@ -1,4 +1,4 @@
-name: "Create nightly build for Windows"
+name: "Nightly - Windows"
 
 on:
   workflow_dispatch:
