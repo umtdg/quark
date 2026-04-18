@@ -48,7 +48,7 @@ runs:
         jq --arg v "$VER" '.version = $v' "$TAURI_CONF" > tmp.json && mv tmp.json "$TAURI_CONF"
 
     - name: Patch WiX MSI version for nightly (Windows)
-      if: inputs.platform == "windows-latest"
+      if: inputs.platform == 'windows-latest'
       shell: bash
       run: |
         TAURI_CONF='${{ inputs.tauri-config }}'
