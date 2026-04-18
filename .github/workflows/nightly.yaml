@@ -82,39 +82,67 @@ jobs:
               if (e.status !== 404 && e.status !== 422) throw e;
             }
 
-  nightly-linux:
+  nightly:
     needs: prepare
 
-    uses: ./.github/workflows/nightly-linux.yaml
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: "macos-latest"
+            args: "--target aarch64-apple-darwin"
+            status-target: "macos-aarch64"
+          - platform: "ubuntu-22.04"
+            args: ""
+            status-target: "linux"
+          - platform: "windows-latest"
+            args: ""
+            status-target: "windows"
+
+    permissions:
+      contents: write
+
     secrets: inherit
+    uses: ./.github/workflows/tauri-build.yaml
     with:
+      platform: ${{ matrix.platform }}
+      args: ${{ matrix.args }}
+      status-target: ${{ matrix.status-target }}
+      nightly: true
       build-number: ${{ needs.prepare.outputs.build-number }}
-      date: ${{ needs.prepare.outputs.date }}
+      tagName: "rolling"
+      releaseName: "Quark Nightly ${{ needs.prepare.outputs.date }}"
+      releaseBody: "Automated nightly build from main"
 
-  nightly-windows:
-    needs: prepare
+  update-badges:
+    needs:
+      - prepare
+      - nightly
+    if: always()
 
-    uses: ./.github/workflows/nightly-windows.yaml
-    secrets: inherit
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: "linux"
+          - target: "windows"
+          - target: "macos-aarch64"
+
+    secrets:
+      gist_id: ${{ secrets.BADGE_GIST_ID }}
+      gist_token: ${{ secrets.BADGE_GIST_TOKEN }}
+
+    uses: ./.github/workflows/update-badges.yaml
     with:
-      build-number: ${{ needs.prepare.outputs.build-number }}
-      date: ${{ needs.prepare.outputs.date }}
-
-  nightly-macos-aarch64:
-    needs: prepare
-
-    uses: ./.github/workflows/nightly-macos-aarch64.yaml
-    secrets: inherit
-    with:
-      build-number: ${{ needs.prepare.outputs.build-number }}
-      date: ${{ needs.prepare.outputs.date }}
+      channel: "nightly"
+      enabled: ${{ needs.prepare.result == 'success' && needs.nightly.result != 'skipped' && needs.nightly.result != 'cancelled' }}
+      target: ${{ matrix.target }}
+      status: ${{ needs.nightly.outputs[format('status-{0}', matrix.target)] }}
 
   finalize:
     needs:
       - prepare
-      - nightly-linux
-      - nightly-windows
-      - nightly-macos-aarch64
+      - nightly
 
     permissions:
       contents: write
