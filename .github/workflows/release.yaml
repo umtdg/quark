@@ -1,4 +1,4 @@
-name: "Publish - Common"
+name: "Release"
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ jobs:
         with:
           version: ${{ github.ref_name }}
 
-  publish:
+  release:
     needs: prepare
 
     strategy:
@@ -51,7 +51,7 @@ jobs:
   update-badges:
     needs:
       - prepare
-      - publish
+      - release
     if: always()
 
     strategy:
@@ -69,6 +69,6 @@ jobs:
     uses: ./.github/workflows/update-badges.yaml
     with:
       channel: "release"
-      enabled: ${{ needs.prepare.result == 'success' && needs.publish.result != 'skipped' && needs.publish.result != 'cancelled' }}
+      enabled: ${{ needs.prepare.result == 'success' && needs.release.result != 'skipped' && needs.release.result != 'cancelled' }}
       target: ${{ matrix.target }}
-      status: ${{ needs.publish.outputs[format('status-{0}', matrix.target)] }}
+      status: ${{ needs.release.outputs[format('status-{0}', matrix.target)] }}
