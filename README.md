@@ -2,9 +2,9 @@
 
 | Platform  | Nightly | Release |
 |-----------|---------|---------|
-| Linux     | ![Nightly - Linux](https://github.com/umtdg/quark/actions/workflows/nightly-linux.yaml/badge.svg) | ![Release - Linux](https://github.com/umtdg/quark/actions/workflows/publish-linux.yaml/badge.svg) |
-| Windows   | ![Nightly - Windows](https://github.com/umtdg/quark/actions/workflows/nightly-windows.yaml/badge.svg) | ![Release - Windows](https://github.com/umtdg/quark/actions/workflows/publish-windows.yaml/badge.svg) |
-| MacOS ARM | ![Nightly - MacOS ARM](https://github.com/umtdg/quark/actions/workflows/nightly-macos-aarch64.yaml/badge.svg) | ![Release - MacOS ARM](https://github.com/umtdg/quark/actions/workflows/publish-macos-aarch64.yaml/badge.svg) |
+| Linux     | ![Nightly Linux](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/umtdg/571dd2412e6a4655128569ed722cfb88/raw/nightly-linux.json) | ![Release - Linux](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/umtdg/571dd2412e6a4655128569ed722cfb88/raw/release-linux.json) |
+| Windows   | ![Nightly Windows](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/umtdg/571dd2412e6a4655128569ed722cfb88/raw/nightly-windows.json) | ![Release - Windows](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/umtdg/571dd2412e6a4655128569ed722cfb88/raw/release-windows.json) |
+| MacOS ARM | ![Nightly MacOS ARM](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/umtdg/571dd2412e6a4655128569ed722cfb88/raw/nightly-macos-aarch64.json) | ![Release MacOS ARM](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/umtdg/571dd2412e6a4655128569ed722cfb88/raw/release-macos-aarch64.json) |
 
 Quick access application for Proton Pass, similar to 1Password Quick Access,
 using `pass-cli`.
