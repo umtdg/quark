@@ -1,26 +1,10 @@
-name: "Nightly - Common"
+name: "Nightly"
 
 on:
-  workflow_call:
-    inputs:
-      platform:
-        type: string
-        required: true
-        description: "Target platform to build for"
-      args:
-        type: string
-        required: false
-        description: "Additional arguments passed to tauri-action"
-        default: ""
-      tag:
-        type: string
-        required: false
-        description: "Tag to use for nightly builds"
-        default: "rolling"
-      build-counter-file:
-        type: string
-        required: true
-        description: "File to use for build counter"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * *"
+      timezone: "Europe/Istanbul"
 
 jobs:
   check-for-changes:
@@ -55,7 +39,7 @@ jobs:
         id: compute-counter
         shell: bash
         run: |
-          CURRENT=$(cat ${{ inputs.build-counter-file }})
+          CURRENT=$(cat .github/nightly-build-number)
           NEXT=$((CURRENT + 1))
           echo "build-number=$NEXT" >> "$GITHUB_OUTPUT"
 
@@ -64,11 +48,11 @@ jobs:
         shell: bash
         run: echo "date=$(date '+%Y-%m-%d')" >> "$GITHUB_OUTPUT"
 
-      - name: Delete existing ${{ inputs.tag }} release and tag
+      - name: Delete existing rolling release and tag
         uses: actions/github-script@v9
         with:
           script: |
-            const tag = '${{ inputs.tag }}';
+            const tag = 'rolling';
 
             // delete release if exists
             try {
@@ -98,27 +82,39 @@ jobs:
               if (e.status !== 404 && e.status !== 422) throw e;
             }
 
-  nightly:
+  nightly-linux:
     needs: prepare
 
-    permissions:
-      contents: write
-
-    uses: ./.github/workflows/tauri-build.yaml
+    uses: ./.github/workflows/nightly-linux.yaml
     secrets: inherit
     with:
-      platform: ${{ inputs.platform }}
-      args: ${{ inputs.args }}
-      nightly: true
       build-number: ${{ needs.prepare.outputs.build-number }}
-      tagName: ${{ inputs.tag }}
-      releaseName: "Quark Nightly ${{ needs.prepare.outputs.date }}"
-      releaseBody: "Automated nightly build from main"
+      date: ${{ needs.prepare.outputs.date }}
+
+  nightly-windows:
+    needs: prepare
+
+    uses: ./.github/workflows/nightly-windows.yaml
+    secrets: inherit
+    with:
+      build-number: ${{ needs.prepare.outputs.build-number }}
+      date: ${{ needs.prepare.outputs.date }}
+
+  nightly-macos-aarch64:
+    needs: prepare
+
+    uses: ./.github/workflows/nightly-macos-aarch64.yaml
+    secrets: inherit
+    with:
+      build-number: ${{ needs.prepare.outputs.build-number }}
+      date: ${{ needs.prepare.outputs.date }}
 
   finalize:
     needs:
       - prepare
-      - nightly
+      - nightly-linux
+      - nightly-windows
+      - nightly-macos
 
     permissions:
       contents: write
@@ -135,18 +131,16 @@ jobs:
         env:
           BUILD_NUMBER: ${{ needs.prepare.outputs.build-number }}
         run: |
-          COUNTER_FILE='${{ inputs.build-counter-file }}'
-
           git config user.name '${{ github.actor }}'
           git config user.email '${{ github.actor }}@users.noreply.github.com'
 
-          printf '%s\n' "$BUILD_NUMBER" > "$COUNTER_FILE"
+          printf '%s\n' "$BUILD_NUMBER" > .github/nightly-build-number
 
           # do not update if there is no diff
-          if git diff --quiet -- "$COUNTER_FILE"; then
+          if git diff --quiet -- .github/nightly-build-number; then
             exit 0
           fi
 
-          git add "$COUNTER_FILE"
+          git add .github/nightly-build-number
           git commit -m "ci: bump nightly build counter to $BUILD_NUMBER"
           git push origin "HEAD:${GITHUB_REF_NAME}"

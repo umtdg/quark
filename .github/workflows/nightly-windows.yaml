@@ -1,15 +1,33 @@
 name: "Nightly - Windows"
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *"
-      timezone: "Europe/Istanbul"
+  workflow_call:
+    inputs:
+      build-number:
+        type: string
+        required: true
+        description: "Nightly build number"
+      tag:
+        type: string
+        required: false
+        description: "Release tag"
+        default: "rolling"
+      date:
+        type: string
+        required: true
+        description: "Date for release name (YYYY-MM-DD)"
 
 jobs:
   windows:
+    permissions:
+      contents: write
+
+    uses: ./.github/workflows/tauri-build.yaml
     secrets: inherit
-    uses: ./.github/workflows/nightly.yaml
     with:
       platform: windows-latest
-      build-counter-file: .github/nightly-build-number/windows
+      nightly: true
+      build-number: ${{ inputs.build-number }}
+      tagName: ${{ inputs.tag }}
+      releaseName: "Quark Nightly ${{ inputs.date }}"
+      releaseBody: "Automated nightly build from main"
