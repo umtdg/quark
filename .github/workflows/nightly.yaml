@@ -1,128 +1,144 @@
-name: "nightly"
-description: "Create a nightly build"
+name: "Common workflow for building nightly versions for a specific target"
 
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: "0 0 * * *"
-      timezone: "Europe/Istanbul"
-
-concurrency:
-  group: nightly-${{ github.ref }}
-  cancel-in-progress: false
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        required: true
+        description: "Target platform to build for"
+      args:
+        type: string
+        required: false
+        description: "Additional arguments passed to tauri-action"
+        default: ""
+      tag:
+        type: string
+        required: false
+        description: "Tag to use for nightly builds"
+        default: "rolling"
+      build-counter-file:
+        type: string
+        required: true
+        description: "File to use for build counter"
 
 jobs:
   check-for-changes:
-    runs-on: ubuntu-latest
     outputs:
       changed: ${{ steps.detect-changes.outputs.changed }}
+
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
 
-      - name: Check for changes in files and folders that requires rebuild
+      - uses: ./.github/actions/detect-changes
         id: detect-changes
-        run: |
-          FILE_LIST=(src src-tauri index.html package.json pnpm-lock.json tsconfig.json vite.config.json)
-          if git log --since="24 hours ago" --oneline -- "${FILE_LIST[@]}" | grep -q .; then
-            echo "changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "changed=false" >> $GITHUB_OUTPUT
-          fi
 
   prepare:
     needs: check-for-changes
     if: needs.check-for-changes.outputs.changed == 'true'
-    runs-on: ubuntu-latest
+
     permissions:
       contents: write
+
     outputs:
       build-number: ${{ steps.compute-counter.outputs.build-number }}
+      date: ${{ steps.date.outputs.date }}
+
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
-        with:
-          fetch-depth: 1
 
       - name: Compute nightly build counter
         id: compute-counter
         shell: bash
         run: |
-          CURRENT=$(cat .github/nightly-build-number)
+          CURRENT=$(cat ${{ inputs.build-counter-file }})
           NEXT=$((CURRENT + 1))
           echo "build-number=$NEXT" >> "$GITHUB_OUTPUT"
 
-      - name: Delete existing rolling release and tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get current date
+        id: date
         shell: bash
-        run: |
-          gh release delete rolling --cleanup-tag -y || true
+        run: echo "date=$(date '+%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      - name: Delete existing ${{ inputs.tag }} release and tag
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const tag = '${{ inputs.tag }}';
+
+            // delete release if exists
+            try {
+              const { data } = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: data.id,
+              });
+            } catch (e) {
+              if (e.status !== 404) throw e;
+            }
+
+            // delete tag reference if exists
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tag}`,
+              });
+            } catch (e) {
+              if (e.status !== 404 && e.status !== 422) throw e;
+            }
 
   nightly:
     needs: prepare
 
     permissions:
       contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: "macos-latest"
-            args: "--target aarch64-apple-darwin"
-          - platform: "ubuntu-22.04"
-            args: ""
-          - platform: "windows-latest"
-            args: ""
 
-    runs-on: ${{ matrix.platform }}
-    steps:
-      - uses: actions/checkout@v6
-
-      - uses: ./.github/actions/setup
-        name: "Set-up environment"
-        with:
-          platform: ${{ matrix.platform }}
-
-      - uses: ./.github/actions/version
-        name: "Patch version and product name for nightly"
-        id: version
-        with:
-          platform: ${{ matrix.platform }}
-          build-number: ${{ needs.prepare.outputs.build-number }}
-
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: rolling
-          releaseName: "Quark Nightly ${{ steps.version.outputs.date }} (Build ${{ needs.prepare.outputs.build-number }})"
-          releaseBody: "Automated nightly build from main"
-          releaseDraft: false
-          prerelease: true
-          generateReleaseNotes: false
-          args: ${{ matrix.args }}
+    uses: ./.github/workflows/tauri-build.yaml
+    secrets: inherit
+    with:
+      platform: ${{ inputs.platform }}
+      args: ${{ inputs.args }}
+      nightly: true
+      build-number: ${{ needs.prepare.outputs.build-number }}
+      tagName: ${{ inputs.tag }}
+      releaseName: "Quark Nightly ${{ needs.prepare.outputs.date }}"
+      releaseBody: "Automated nightly build from main"
 
   finalize:
     needs:
       - prepare
       - nightly
-    runs-on: ubuntu-latest
+
     permissions:
       contents: write
+
+    runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v6
         with:
           token: ${{ secrets.QUARK_ACCESS_TOKEN }}
-          fetch-depth: 0
           ref: ${{ github.ref_name }}
 
       - name: Commit nightly build counter after successful build
         env:
           BUILD_NUMBER: ${{ needs.prepare.outputs.build-number }}
         run: |
-          COUNTER_FILE=".github/nightly-build-number"
+          COUNTER_FILE='${{ inputs.build-counter-file }}'
 
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git config user.name '${{ github.actor }}'
+          git config user.email '${{ github.actor }}@users.noreply.github.com'
 
           printf '%s\n' "$BUILD_NUMBER" > "$COUNTER_FILE"
 

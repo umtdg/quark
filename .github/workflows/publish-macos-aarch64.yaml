@@ -1,0 +1,15 @@
+name: "Create release build for ARM-based MacOS"
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  macos-aarch64:
+    secrets: inherit
+    uses: ./.github/workflows/publish.yaml
+    with:
+      platform: macos-latest
+      args: "--target aarch64-apple-darwin"

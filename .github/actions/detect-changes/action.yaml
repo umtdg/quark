@@ -1,0 +1,37 @@
+name: "Detect changes"
+description: "Check for changes in files and folders that require rebuild"
+
+inputs:
+  since:
+    type: string
+    description: "Time range for git log (e.g. '24 hours ago')"
+    required: false
+    default: "24 hours ago"
+
+outputs:
+  changed:
+    type: string
+    description: "Whether changes were detected or not ('true' or 'false')"
+    value: ${{ steps.detect-changes.outputs.changed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Check for changes in files and folders that requires rebuild
+      id: detect-changes
+      run: |
+        FILE_LIST=(
+          src
+          src-tauri
+          index.html
+          package.json
+          pnpm-lock.json
+          tsconfig.json
+          vite.config.json
+        )
+
+        if git log --since='${{ inputs.since }}' --oneline -- "${FILE_LIST[@]}" | grep -q .; then
+          echo "changed=true" >> $GITHUB_OUTPUT
+        else
+          echo "changed=false" >> $GITHUB_OUTPUT
+        fi

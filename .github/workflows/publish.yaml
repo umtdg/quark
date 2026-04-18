@@ -1,55 +1,41 @@
-name: 'publish'
-description: 'Create a release build'
+name: "Common workflow for publishing to a specific target"
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        required: true
+        description: "Target platform to publish on"
+      args:
+        type: string
+        required: false
+        description: "Additional arguments passed to tauri-action"
+        default: ""
 
 jobs:
-  publish:
-    permissions:
-      contents: write
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target aarch64-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+  prepare:
+    runs-on: ubuntu-latest
 
-    runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
 
-      - name: Check version
-        shell: bash
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          TAURI=$(jq -r '.version' src-tauri/tauri.conf.json)
-
-          MISMATCH=0
-          [ "$TAURI" != "$TAG" ] && echo "tauri.conf.json: $TAURI != $TAG" && MISMATCH=1
-
-          [ "$MISMATCH" -eq 1 ] && exit 1
-          echo "All versions match the tag $TAG"
-
-      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/check-version
         with:
-          platform: ${{ matrix.platform }}
+          version: ${{ github.ref_name }}
 
-      - uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tagName: v__VERSION__
-          releaseName: 'Quark v__VERSION__'
-          releaseBody: 'See the assets to download this version and install'
-          releaseDraft: false
-          prerelease: false
-          generateReleaseNotes: true
-          args: ${{ matrix.args }}
+  publish:
+    needs: prepare
 
+    permissions:
+      contents: write
+
+    uses: ./.github/workflows/tauri-build.yaml
+    secrets: inherit
+    with:
+      platform: ${{ inputs.platform }}
+      args: ${{ inputs.args }}
+      tagName: v__VERSION__
+      releaseName: "Quark v__VERSION__"
+      releaseBody: "See the assets to download this version and install"
+      generateReleaseNotes: true

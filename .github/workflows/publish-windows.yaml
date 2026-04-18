@@ -1,0 +1,14 @@
+name: "Create release build for Windows"
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  windows:
+    secrets: inherit
+    uses: ./.github/workflows/publish.yaml
+    with:
+      platform: windows-latest

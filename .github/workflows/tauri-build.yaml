@@ -1,0 +1,82 @@
+name: "Common workflow for building with Tauri"
+
+on:
+  workflow_call:
+    inputs:
+      platform:
+        type: string
+        required: true
+        description: "Target platform to build on"
+      args:
+        type: string
+        required: false
+        description: "Additional arguments passed to tauri-action"
+        default: ""
+      nightly:
+        type: boolean
+        required: false
+        description: "Whether this is a nightly build (runs patch-version)"
+        default: false
+      build-number:
+        type: string
+        required: false
+        description: "Nightly build number (required when nightly is true)"
+        default: ""
+      tagName:
+        type: string
+        required: false
+        description: "Tag name for the release (empty = build only, no release)"
+        default: ""
+      releaseName:
+        type: string
+        required: false
+        description: "Release name"
+        default: ""
+      releaseBody:
+        type: string
+        required: false
+        description: "Release body text"
+        default: ""
+      releaseDraft:
+        type: boolean
+        required: false
+        description: "Whether to create the release as a draft"
+        default: false
+      generateReleaseNotes:
+        type: boolean
+        required: false
+        description: "Whether to auto-generate release notes"
+        default: false
+
+jobs:
+  build:
+    permissions:
+      contents: write
+
+    runs-on: ${{ inputs.platform }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: ./.github/actions/setup
+        with:
+          platform: ${{ inputs.platform }}
+
+      - uses: ./.github/actions/patch-version
+        if: inputs.nightly
+        id: version
+        with:
+          platform: ${{ inputs.platform }}
+          build-number: ${{ inputs.build-number }}
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ inputs.tagName }}
+          releaseName: ${{ inputs.releaseName }}
+          releaseBody: ${{ inputs.releaseBody }}
+          releaseDraft: ${{ inputs.releaseDraft }}
+          prerelease: ${{ inputs.nightly }}
+          generateReleaseNotes: ${{ inputs.generateReleaseNotes }}
+          args: ${{ inputs.args }}

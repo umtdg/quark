@@ -1,0 +1,14 @@
+name: "Create release build for Linux"
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  linux:
+    secrets: inherit
+    uses: ./.github/workflows/publish.yaml
+    with:
+      platform: ubuntu-22.04
