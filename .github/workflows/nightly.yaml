@@ -102,7 +102,11 @@ jobs:
     permissions:
       contents: write
 
-    secrets: inherit
+    secrets:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      gist_id: ${{ secrets.BADGE_GIST_ID }}
+      gist_token: ${{ secrets.BADGE_GIST_TOKEN }}
+
     uses: ./.github/workflows/tauri-build.yaml
     with:
       platform: ${{ matrix.platform }}
@@ -113,31 +117,6 @@ jobs:
       tagName: "rolling"
       releaseName: "Quark Nightly ${{ needs.prepare.outputs.date }}"
       releaseBody: "Automated nightly build from main"
-
-  update-badges:
-    needs:
-      - prepare
-      - nightly
-    if: always()
-
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - target: "linux"
-          - target: "windows"
-          - target: "macos-aarch64"
-
-    secrets:
-      gist_id: ${{ secrets.BADGE_GIST_ID }}
-      gist_token: ${{ secrets.BADGE_GIST_TOKEN }}
-
-    uses: ./.github/workflows/update-badges.yaml
-    with:
-      channel: "nightly"
-      enabled: ${{ needs.prepare.result == 'success' && needs.nightly.result != 'skipped' && needs.nightly.result != 'cancelled' }}
-      target: ${{ matrix.target }}
-      status: ${{ needs.nightly.outputs[format('status-{0}', matrix.target)] }}
 
   finalize:
     needs:

@@ -51,26 +51,18 @@ on:
         required: false
         description: "Whether to auto-generate release notes"
         default: false
-    outputs:
-      status-linux:
-        description: "Linux build status"
-        value: ${{ jobs.build.outputs.status-linux }}
-      status-windows:
-        description: "Windows build status"
-        value: ${{ jobs.build.outputs.status-windows }}
-      status-macos-aarch64:
-        description: "MacOS ARM build status"
-        value: ${{ jobs.build.outputs.status-macos-aarch64 }}
+    secrets:
+      github_token:
+        required: true
+      gist_id:
+        required: true
+      gist_token:
+        required: true
 
 jobs:
   build:
     permissions:
       contents: write
-
-    outputs:
-      status-linux: ${{ steps.set-status.outputs.status-linux }}
-      status-windows: ${{ steps.set-status.outputs.status-windows }}
-      status-macos-aarch64: ${{ steps.set-status.outputs.status-macos-aarch64 }}
 
     runs-on: ${{ inputs.platform }}
 
@@ -90,7 +82,7 @@ jobs:
 
       - uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.github_token }}
         with:
           tagName: ${{ inputs.tagName }}
           releaseName: ${{ inputs.releaseName }}
@@ -100,21 +92,68 @@ jobs:
           generateReleaseNotes: ${{ inputs.generateReleaseNotes }}
           args: ${{ inputs.args }}
 
-      - name: Set per-platform status output
-        id: set-status
-        if: always()
+  update-badge:
+    needs: build
+    if: always()
+
+    # when build succeeds, even if updating status badges fail,
+    # the whole workflow should succeed
+    continue-on-error: true
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build badge metadata
+        id: badge
         shell: bash
         run: |
-          status='false'
-          [ '${{ job.status }}' = 'success' ] && status='true'
+          # Badge metadata in human readable form: <channel> <target>
+          if [ '${{ inputs.nightly }}' = 'true' ]; then
+            channel='nightly'
+            channel_label='Nightly'
+          else
+            channel='release'
+            channel_label='Release'
+          fi
 
-          status_target='${{ inputs.status-target }}'
-          case "$status_target" in
-            linux|windows|macos-aarch64)
-              echo "status-$status_target=$status" >> "$GITHUB_OUTPUT"
+          target='${{ inputs.status-target }}'
+          case "$target" in
+            linux)
+              target_label='Linux'
+              ;;
+            windows)
+              target_label='Windows'
+              ;;
+            macos-aarch64)
+              target_label='MacOS ARM'
               ;;
             *)
-              echo "Unsupported status-target: $status_target" >&2
+              echo "Unsupported target: $target" >&2
               exit 1
               ;;
           esac
+
+          if [ '${{ needs.build.result }}' = 'true' ]; then
+            message='passing'
+            color='brightgreen'
+          else
+            message='failing'
+            color='red'
+          fi
+
+          {
+            echo "filename=$channel-$target.json"
+            echo "label=$channel_label $target_label"
+            echo "message=$message"
+            echo "color=$color"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Update badge
+        uses: schneegans/dynamic-badges-action@v1.8.0
+        with:
+          auth: ${{ secrets.gist_token }}
+          gistID: ${{ secrets.gist_id }}
+          filename: ${{ steps.badge.outputs.filename }}
+          label: ${{ steps.badge.outputs.label }}
+          message: ${{ steps.badge.outputs.message }}
+          color: ${{ steps.badge.outputs.color }}
