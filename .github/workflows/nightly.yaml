@@ -102,10 +102,7 @@ jobs:
     permissions:
       contents: write
 
-    secrets:
-      github_token: ${{ secrets.GITHUB_TOKEN }}
-      gist_id: ${{ secrets.BADGE_GIST_ID }}
-      gist_token: ${{ secrets.BADGE_GIST_TOKEN }}
+    secrets: inherit
 
     uses: ./.github/workflows/tauri-build.yaml
     with:

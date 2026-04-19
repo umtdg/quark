@@ -51,13 +51,6 @@ on:
         required: false
         description: "Whether to auto-generate release notes"
         default: false
-    secrets:
-      github_token:
-        required: true
-      gist_id:
-        required: true
-      gist_token:
-        required: true
 
 jobs:
   build:
@@ -82,7 +75,7 @@ jobs:
 
       - uses: tauri-apps/tauri-action@v0
         env:
-          GITHUB_TOKEN: ${{ secrets.github_token }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ inputs.tagName }}
           releaseName: ${{ inputs.releaseName }}
@@ -151,9 +144,10 @@ jobs:
       - name: Update badge
         uses: schneegans/dynamic-badges-action@v1.8.0
         with:
-          auth: ${{ secrets.gist_token }}
-          gistID: ${{ secrets.gist_id }}
+          auth: ${{ secrets.BADGE_GIST_TOKEN }}
+          gistID: ${{ secrets.BADGE_GIST_ID }}
           filename: ${{ steps.badge.outputs.filename }}
           label: ${{ steps.badge.outputs.label }}
           message: ${{ steps.badge.outputs.message }}
           color: ${{ steps.badge.outputs.color }}
+          forceUpdate: true
