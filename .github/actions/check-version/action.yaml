@@ -13,7 +13,9 @@ runs:
       shell: bash
       run: |
         TAG='${{ inputs.version }}'
-        TAURI=$(jq -r '.version' src-tauri/tauri.conf.json)
+
+        declare TAURI
+        TAURI="v$(jq -r '.version' src-tauri/tauri.conf.json)"
 
         MISMATCH=0
         [ "$TAURI" != "$TAG" ] && echo "tauri.conf.json: $TAURI != $TAG" && MISMATCH=1
