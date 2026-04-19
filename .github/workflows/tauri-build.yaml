@@ -96,15 +96,6 @@ jobs:
             -s -k "$KEYCHAIN_PASSWORD" build.keychain
           security find-identity -v -p codesigning build.keychain
 
-      - name: Verify Apple Developer Certificate
-        if: inputs.platform == 'macos-latest'
-        shell: bash
-        run: |
-          cert_info=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
-          cert_id=$(echo "$cert_info" | awk -F'"' '{print $2}')
-          echo "APPLE_SIGNING_IDENTITY=$cert_id" >> "$GITHUB_ENV"
-          echo "Apple Developer Certificate imported"
-
       - name: Create Apple API key file
         if: inputs.platform == 'macos-latest'
         shell: bash
@@ -124,7 +115,7 @@ jobs:
           APPLE_API_KEY_PATH: ${{ env.APPLE_API_KEY_PATH }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
           tagName: ${{ inputs.tagName }}
           releaseName: ${{ inputs.releaseName }}
