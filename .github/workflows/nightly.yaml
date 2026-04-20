@@ -102,7 +102,16 @@ jobs:
     permissions:
       contents: write
 
-    secrets: inherit
+    secrets:
+      gh_token: ${{ secrets.GITHUB_TOKEN }}
+      badge_gist_token: ${{ secrets.BADGE_GIST_TOKEN }}
+      badge_gist_id: ${{ secrets.BADGE_GIST_ID }}
+      apple_api_key_id: ${{ secrets.APPLE_API_KEY_ID }}
+      apple_api_issuer: ${{ secrets.APPLE_API_ISSUER }}
+      apple_api_key: ${{ secrets.APPLE_API_KEY }}
+      apple_certificate: ${{ secrets.APPLE_CERTIFICATE }}
+      apple_certificate_password: ${{ secrets.APPLE_CERTIFICATE_PASS }}
+      apple_keychain_password: ${{ secrets.KEYCHAIN_PASSWORD }}
 
     uses: ./.github/workflows/tauri-build.yaml
     with:
@@ -114,7 +123,6 @@ jobs:
       tagName: "rolling"
       releaseName: "Quark Nightly ${{ needs.prepare.outputs.date }}"
       releaseBody: "Automated nightly build from main"
-      sign: true
 
   finalize:
     needs:
