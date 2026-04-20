@@ -5,7 +5,7 @@ pub mod shell;
 pub mod state;
 pub mod tray;
 
-use tauri::{AppHandle, Emitter, Manager, Runtime, State, WebviewWindow};
+use tauri::{Emitter, Manager, Runtime, State, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use state::ItemState;
@@ -28,7 +28,12 @@ pub trait QuarkAppExt<R: Runtime> {
     fn print_info(&self);
 }
 
-impl<R: Runtime> QuarkAppExt<R> for AppHandle<R> {
+impl<R, T> QuarkAppExt<R> for T
+where
+    R: Runtime,
+    T: Manager<R>,
+    T: Emitter<R>,
+{
     fn get_main_window(&self) -> Result<WebviewWindow<R>> {
         self.get_webview_window("main").ok_or(Error::Window(
             "Cannot find the main window. Try to kill any dangling processes".into(),
