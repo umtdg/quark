@@ -29,9 +29,7 @@ jobs:
             status-target: "windows"
 
     uses: ./.github/workflows/tauri-build.yaml
-
-    secrets:
-      gh_token: ${{ secrets.GITHUB_TOKEN }}
+    secrets: inherit
 
     with:
       platform: ${{ matrix.platform }}
