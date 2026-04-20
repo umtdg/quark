@@ -2,8 +2,8 @@ use tauri::menu::{Menu, MenuEvent, MenuItem};
 use tauri::tray::{MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Manager, Runtime};
 
+use crate::app::QuarkAppExt;
 use crate::error::Result;
-use crate::handlers::{lock_app, show_window};
 
 pub fn create_icon<M: Manager<R>, R: Runtime>(manager: &M) -> Result<TrayIcon<R>> {
     let menu = create_menu(manager)?;
@@ -35,14 +35,12 @@ pub fn create_menu<M: Manager<R>, R: Runtime>(manager: &M) -> Result<Menu<R>> {
 fn on_menu_event<R: Runtime>(app: &AppHandle<R>, event: MenuEvent) {
     match event.id.as_ref() {
         "show" => {
-            show_window(app).expect("failed to show main window");
+            app.show_window().expect("failed to show main window");
         }
         "lock" => {
-            lock_app(app);
+            app.lock().expect("failed to lock application");
         }
         "quit" => {
-            log::info!("Quitting application");
-
             app.exit(0);
         }
         _ => {
@@ -60,10 +58,10 @@ fn on_tray_icon_event<R: Runtime>(tray_icon: &TrayIcon<R>, event: TrayIconEvent)
     } = event
     {
         match button {
-            tauri::tray::MouseButton::Left if button_state == MouseButtonState::Down => {
-                let app = tray_icon.app_handle();
-                show_window(&app).expect("failed to show main window");
-            }
+            tauri::tray::MouseButton::Left if button_state == MouseButtonState::Down => tray_icon
+                .app_handle()
+                .show_window()
+                .expect("failed to show main window"),
             _ => {}
         }
     }

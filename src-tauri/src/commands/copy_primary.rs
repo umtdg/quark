@@ -6,8 +6,8 @@ use zeroize::Zeroize;
 
 use crate::app::config::AppConfig;
 use crate::app::state::{ItemState, RuntimeState};
+use crate::app::QuarkAppExt;
 use crate::error::Result;
-use crate::handlers::hide_window;
 use crate::item::ItemRef;
 
 #[tauri::command]
@@ -24,7 +24,7 @@ pub async fn copy_primary<R: Runtime>(
             let mut secret = item.content.get_primary()?;
             app.clipboard().write_secret(&secret)?;
 
-            hide_window(&app)?;
+            app.hide_window()?;
 
             secret.zeroize();
 

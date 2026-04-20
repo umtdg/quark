@@ -1,70 +1,10 @@
 use clap::Parser;
-use tauri::{AppHandle, Emitter, Manager, Runtime, State, WebviewWindow, Window, WindowEvent};
-use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri::{AppHandle, Manager, Runtime, State, Window, WindowEvent};
 use tauri_plugin_global_shortcut::{Shortcut, ShortcutEvent, ShortcutState};
 
-use crate::app::cli::{Cli, Command};
+use crate::app::cli::{Cli, CommandContext};
 use crate::app::config::AppConfig;
-use crate::app::state::ItemState;
-use crate::commands::lock;
-use crate::error::{Error, Result};
-
-pub fn get_main_window<R: Runtime>(app: &AppHandle<R>) -> Result<WebviewWindow<R>> {
-    app.get_webview_window("main").ok_or(Error::Window(
-        "Cannot find the main window. Try to kill any dangling processes".into(),
-    ))
-}
-
-pub fn show_window<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
-    log::info!("Showing and focusing main window");
-
-    let window = get_main_window(app)?;
-
-    window
-        .show()
-        .map_err(|err| Error::Window(err.to_string()))?;
-    window
-        .set_focus()
-        .map_err(|err| Error::Window(err.to_string()))
-}
-
-pub fn hide_window<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
-    log::info!("Hiding window");
-
-    let window = get_main_window(app)?;
-
-    window.hide().map_err(|err| Error::Window(err.to_string()))
-}
-
-pub fn lock_app<R: Runtime>(app: &AppHandle<R>) {
-    log::info!("Locking application");
-
-    let app_clone = app.clone();
-    let item_state: State<'_, ItemState> = app.state();
-
-    let lock_task = async move { lock(app_clone, item_state).await };
-    let _ = tauri::async_runtime::block_on(lock_task);
-}
-
-pub fn clear_clipboard<R: Runtime>(app: &AppHandle<R>) -> Result<()> {
-    log::debug!("Clearing clipboard");
-
-    app.clipboard().clear()?;
-    app.emit("clipboard-clear", None::<&str>)?;
-
-    Ok(())
-}
-
-pub fn print_version<R: Runtime>(app: &AppHandle<R>) {
-    println!("{}", app.package_info().version);
-}
-
-pub fn print_info<R: Runtime>(app: &AppHandle<R>) {
-    let package_info = app.package_info();
-    println!("{} {}", package_info.name, package_info.version);
-    println!("Authors: {}", package_info.authors);
-    println!("Description: {}", package_info.description);
-}
+use crate::app::QuarkAppExt;
 
 pub fn on_window_event<R: Runtime>(window: &Window<R>, event: &WindowEvent) {
     match event {
@@ -87,13 +27,9 @@ pub fn on_multiple_instance<R: Runtime>(app: &AppHandle<R>, args: Vec<String>, _
     log::debug!("App re-launched with args {:?}", args);
 
     let args = Cli::parse_from(args);
-    match args.command.unwrap_or(Command::Show) {
-        Command::Show => show_window(app).expect("failed to show main window"),
-        Command::Lock => lock_app(app),
-        Command::Quit => app.exit(0),
-        Command::Version => print_version(app),
-        Command::Info => {}
-    }
+    args.run(CommandContext::SingleInstance {
+        app_handle: app.clone(),
+    });
 }
 
 pub fn global_shortcut_handler<R: Runtime>(
@@ -111,7 +47,7 @@ pub fn global_shortcut_handler<R: Runtime>(
         log::debug!("Action for shortcut is '{:?}'", action);
         match action {
             crate::app::config::GlobalShortcutAction::Show => {
-                show_window(app).expect("failed to show main window");
+                app.show_window().expect("failed to show main window");
             }
         }
     }

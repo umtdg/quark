@@ -7,20 +7,17 @@ pub mod serde;
 
 use clap::Parser;
 use tauri::plugin::TauriPlugin;
-use tauri::{App, Builder, Context, Manager, Runtime};
+use tauri::{App, Builder, Context, Runtime, Wry};
 
-use crate::app::cli::Cli;
+use crate::app::cli::{Cli, CommandContext};
 use crate::app::config::AppConfig;
-use crate::app::state::{AppState, CryptoState, ItemState, RuntimeState};
-use crate::app::tray::create_icon;
+use crate::app::state::RuntimeState;
 use crate::commands::{
     copy_alt, copy_primary, copy_secondary, get_items, get_shortcut_action, init_crypto,
     is_first_launch, is_locked, lock, refresh_items, unlock,
 };
 use crate::error::Result;
-use crate::handlers::{
-    global_shortcut_handler, on_multiple_instance, on_window_event, print_info, print_version,
-};
+use crate::handlers::{global_shortcut_handler, on_multiple_instance, on_window_event};
 
 fn build_log<R: Runtime>(app_config: &AppConfig) -> TauriPlugin<R> {
     tauri_plugin_log::Builder::new()
@@ -66,36 +63,6 @@ fn build_app<R: Runtime>(context: Context<R>, app_config: &AppConfig) -> Result<
         .map_err(Into::into)
 }
 
-fn launch_app(app: App, app_config: AppConfig, runtime_state: RuntimeState) -> Result<()> {
-    log::info!("Launching application with config: {:?}", app_config);
-
-    let _tray_icon = create_icon(app.handle())?;
-
-    // unwrap is safe since we return Some() from the callback of load_or
-    let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
-    let item_state: ItemState = ItemState::load_or_new(item_state_path)?;
-
-    let crypto_state_path = runtime_state.data_dir.join(CryptoState::FILE_NAME);
-    let crypto_state: Option<CryptoState> = CryptoState::load_or(&crypto_state_path, |_| {
-        log::info!("No crypto state is found. Setting first_launch = true");
-        runtime_state.set_first_launch(true)?;
-
-        Ok(None)
-    })?;
-
-    app.manage(app_config);
-    app.manage(runtime_state);
-    app.manage(item_state);
-    if let Some(crypto_state) = crypto_state {
-        app.manage(crypto_state);
-    }
-
-    log::info!("Runing application");
-    app.run(|_, _| {});
-
-    Ok(())
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
     // this parse both validates the command and allows us to get the config path from cli
@@ -113,17 +80,16 @@ pub fn run() -> Result<()> {
     let mut app_config = AppConfig::load(config_path)?;
     app_config.merge(&cli);
 
-    let app = build_app(context, &app_config)?;
+    let app: App<Wry> = build_app(context, &app_config)?;
 
     // if we end up here, it means that single instance plugin didn't pick up
     // and this is the first launch of the app
 
-    match cli.command.unwrap_or(app::cli::Command::Show) {
-        app::cli::Command::Version => print_version(app.handle()),
-        app::cli::Command::Info => print_info(app.handle()),
-        app::cli::Command::Show => launch_app(app, app_config, runtime_state)?,
-        _ => eprintln!("There is no instance of the application running"),
-    };
+    cli.run(CommandContext::FirstLaunch {
+        app,
+        app_config: Box::new(app_config),
+        runtime_state,
+    });
 
     Ok(())
 }

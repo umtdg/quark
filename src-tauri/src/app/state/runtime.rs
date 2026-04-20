@@ -6,8 +6,8 @@ use tauri::{AppHandle, Runtime};
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
 
+use crate::app::QuarkAppExt;
 use crate::error::{Error, Result};
-use crate::handlers::clear_clipboard;
 
 pub struct RuntimeState {
     pub first_launch: RwLock<bool>,
@@ -74,7 +74,7 @@ impl RuntimeState {
         let app_clone = app.clone();
         *handle = Some(tokio::spawn(async move {
             sleep(clear_interval).await;
-            if let Err(err) = clear_clipboard(&app_clone) {
+            if let Err(err) = app_clone.clear_clipboard() {
                 log::error!("Failed to clear clipboard: {}", err);
             }
         }));
