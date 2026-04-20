@@ -9,7 +9,7 @@ use clap::Parser;
 use tauri::plugin::TauriPlugin;
 use tauri::{App, Builder, Context, Runtime, Wry};
 
-use crate::app::cli::Cli;
+use crate::app::cli::{Cli, CommandContext};
 use crate::app::config::AppConfig;
 use crate::app::state::RuntimeState;
 use crate::commands::{
@@ -17,10 +17,7 @@ use crate::commands::{
     is_first_launch, is_locked, lock, refresh_items, unlock,
 };
 use crate::error::Result;
-use crate::handlers::{
-    global_shortcut_handler, handle_cli_command, on_multiple_instance, on_window_event,
-    CommandContext,
-};
+use crate::handlers::{global_shortcut_handler, on_multiple_instance, on_window_event};
 
 fn build_log<R: Runtime>(app_config: &AppConfig) -> TauriPlugin<R> {
     tauri_plugin_log::Builder::new()
@@ -88,14 +85,11 @@ pub fn run() -> Result<()> {
     // if we end up here, it means that single instance plugin didn't pick up
     // and this is the first launch of the app
 
-    handle_cli_command(
-        cli.command,
-        CommandContext::FirstLaunch {
-            app,
-            app_config: Box::new(app_config),
-            runtime_state,
-        },
-    );
+    cli.run(CommandContext::FirstLaunch {
+        app,
+        app_config: Box::new(app_config),
+        runtime_state,
+    });
 
     Ok(())
 }
