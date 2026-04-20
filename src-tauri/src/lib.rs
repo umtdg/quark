@@ -65,7 +65,6 @@ fn build_app<R: Runtime>(context: Context<R>, app_config: &AppConfig) -> Result<
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() -> Result<()> {
-    // this parse both validates the command and allows us to get the config path from cli
     let cli = Cli::parse();
 
     let context = tauri::generate_context!();
