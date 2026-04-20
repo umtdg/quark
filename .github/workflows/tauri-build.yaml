@@ -51,6 +51,11 @@ on:
         required: false
         description: "Whether to auto-generate release notes"
         default: false
+      sign:
+        type: boolean
+        required: false
+        description: "Whether to sign artifacts or not. This disables Apple Certificate related steps"
+        default: false
 
 jobs:
   build:
@@ -74,7 +79,7 @@ jobs:
           build-number: ${{ inputs.build-number }}
 
       - name: Import Apple Developer Certificate
-        if: inputs.platform == 'macos-latest'
+        if: inputs.sign && inputs.platform == 'macos-latest'
         env:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
@@ -97,7 +102,7 @@ jobs:
           security find-identity -v -p codesigning build.keychain
 
       - name: Verify Apple Developer Certificate
-        if: inputs.platform == 'macos-latest'
+        if: inputs.sign && inputs.platform == 'macos-latest'
         shell: bash
         run: |
           cert_info=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
@@ -106,7 +111,7 @@ jobs:
           echo "Apple Developer Certificate imported"
 
       - name: Create Apple API key file
-        if: inputs.platform == 'macos-latest'
+        if: inputs.sign && inputs.platform == 'macos-latest'
         shell: bash
         run: |
           key_id='${{ secrets.APPLE_API_KEY_ID }}'

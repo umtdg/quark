@@ -114,6 +114,7 @@ jobs:
       tagName: "rolling"
       releaseName: "Quark Nightly ${{ needs.prepare.outputs.date }}"
       releaseBody: "Automated nightly build from main"
+      sign: true
 
   finalize:
     needs:
