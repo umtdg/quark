@@ -5,7 +5,7 @@ pub mod shell;
 pub mod state;
 pub mod tray;
 
-use tauri::{App, Emitter, Manager, Runtime, State, WebviewWindow};
+use tauri::{App, Context, Emitter, Manager, Runtime, State, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use config::AppConfig;
@@ -24,10 +24,6 @@ pub trait QuarkAppExt<R: Runtime> {
     fn lock(&self) -> Result<()>;
 
     fn clear_clipboard(&self) -> Result<()>;
-
-    fn print_version(&self);
-
-    fn print_info(&self);
 }
 
 impl<R, T> QuarkAppExt<R> for T
@@ -80,17 +76,6 @@ where
 
         Ok(())
     }
-
-    fn print_version(&self) {
-        println!("{}", self.package_info().version);
-    }
-
-    fn print_info(&self) {
-        let package_info = self.package_info();
-        println!("{} {}", package_info.name, package_info.version);
-        println!("Authors: {}", package_info.authors);
-        println!("Description: {}", package_info.description);
-    }
 }
 
 pub fn launch_app<R: Runtime>(
@@ -125,4 +110,26 @@ pub fn launch_app<R: Runtime>(
     app.run(|_, _| {});
 
     Ok(())
+}
+
+pub trait QuarkAppContextExt<R: Runtime> {
+    fn print_version(&self);
+
+    fn print_info(&self);
+}
+
+impl<R> QuarkAppContextExt<R> for Context<R>
+where
+    R: Runtime,
+{
+    fn print_version(&self) {
+        println!("{}", self.package_info().version);
+    }
+
+    fn print_info(&self) {
+        let package_info = self.package_info();
+        println!("{} {}", package_info.name, package_info.version);
+        println!("Authors: {}", package_info.authors);
+        println!("Description: {}", package_info.description);
+    }
 }

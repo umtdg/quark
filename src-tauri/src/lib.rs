@@ -68,6 +68,14 @@ pub fn run() -> Result<()> {
     let cli = Cli::parse();
 
     let context = tauri::generate_context!();
+
+    // run if the command is instance independent before doing anything
+    // and exit since the command doesn't require launching or
+    // handling by single instance plugin
+    if cli.run_instance_independent(&context) {
+        return Ok(());
+    }
+
     let bundle_identifier = &context.config().identifier;
 
     let runtime_state = RuntimeState::new(bundle_identifier.as_str(), false)?;
