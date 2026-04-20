@@ -72,63 +72,27 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/setup
+      - name: Set-up tooling for tauri build
+        uses: ./.github/actions/setup
         with:
           platform: ${{ inputs.platform }}
 
-      - uses: ./.github/actions/patch-version
+      - name: Patch version and product name for nightly
+        uses: ./.github/actions/patch-version
         if: inputs.nightly
         id: version
         with:
           platform: ${{ inputs.platform }}
           build-number: ${{ inputs.build-number }}
 
-      - name: Import Apple Developer Certificate
+      - name: Prepare for MacOS signing
         if: inputs.sign && inputs.platform == 'macos-latest'
-        env:
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-        shell: bash
-        run: |
-          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-          security set-keychain-settings -t 3600 -u build.keychain
-
-          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
-          security import certificate.p12 \
-            -k build.keychain \
-            -P "$APPLE_CERTIFICATE_PASSWORD" \
-            -T /usr/bin/codesign
-          security set-key-partition-list \
-            -S apple-tool:,apple:,codesign: \
-            -s -k "$KEYCHAIN_PASSWORD" build.keychain
-          security find-identity -v -p codesigning build.keychain
-
-      - name: Verify Apple Developer Certificate
-        if: inputs.sign && inputs.platform == 'macos-latest'
-        shell: bash
-        run: |
-          cert_info=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application")
-          cert_id=$(echo "$cert_info" | awk -F'"' '{print $2}')
-          echo "APPLE_SIGNING_IDENTITY=$cert_id" >> "$GITHUB_ENV"
-          echo "Apple Developer Certificate imported"
-
-      - name: Create Apple API key file
-        if: inputs.sign && inputs.platform == 'macos-latest'
-        shell: bash
-        run: |
-          key_id='${{ secrets.APPLE_API_KEY_ID }}'
-          key_path="$RUNNER_TEMP/AuthKey_$key_id.p8"
-          printf '%s' '${{ secrets.APPLE_API_KEY }}' > "$key_path"
-          chmod 600 "$key_path"
-          echo "APPLE_API_KEY_PATH=$key_path" >> "$GITHUB_ENV"
-          echo "Apple API key file created"
+        uses: ./.github/actions/macos-sign
 
         # timeout because apple notarization can take unreasonably long
         # and macos runner will eat all of the actions usage
-      - uses: tauri-apps/tauri-action@v0
+      - name: Tauri build and sign
+        uses: tauri-apps/tauri-action@v0
         if: inputs.sign
         timeout-minutes: 30
         env:
@@ -152,7 +116,8 @@ jobs:
         # tauri-action still tries to sign the macos application.
         # this causes failures as empty environment variables/secrets are not valid
         # instead, splitting to two actions with sign/not-sign is easier
-      - uses: tauri-apps/tauri-action@v0
+      - name: Tauri build without signing
+        uses: tauri-apps/tauri-action@v0
         if: ${{ !inputs.sign }}
         timeout-minutes: 30
         env:

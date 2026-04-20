@@ -13,7 +13,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/check-version
+      - name: Check version in tag against version in Tauri config
+        uses: ./.github/actions/check-version
         with:
           version: ${{ github.ref_name }}
 
@@ -39,6 +40,7 @@ jobs:
 
     secrets: inherit
 
+    name: Build application for release
     uses: ./.github/workflows/tauri-build.yaml
     with:
       platform: ${{ matrix.platform }}

@@ -16,7 +16,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: ./.github/actions/detect-changes
+      - name: Check if we need to rebuild nightly based on changes
+        uses: ./.github/actions/detect-changes
         id: detect-changes
 
   prepare:
@@ -104,6 +105,7 @@ jobs:
 
     secrets: inherit
 
+    name: Build application for nightly
     uses: ./.github/workflows/tauri-build.yaml
     with:
       platform: ${{ matrix.platform }}

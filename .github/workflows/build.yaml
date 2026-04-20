@@ -28,9 +28,10 @@ jobs:
             args: ""
             status-target: "windows"
 
-    uses: ./.github/workflows/tauri-build.yaml
     secrets: inherit
 
+    name: Build application for PR
+    uses: ./.github/workflows/tauri-build.yaml
     with:
       platform: ${{ matrix.platform }}
       status-target: ${{ matrix.status-target }}
