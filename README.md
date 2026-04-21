@@ -143,14 +143,19 @@ Options:
 
 ### Linux
 
-There is a Debian package available for download under releases. There is also
-an [AUR package](https://aur.archlinux.org/packages/quark-quick-access) for Arch
-Linux.
+#### Ubuntu
+
+There is a Debian package available for download under releases.
+
+#### Arch
+
+Available in AUR
+[quark-quick-access-bin](https://aur.archlinux.org/packages/quark-quick-access-bin)
 
 ### MacOS
 
-There is an Apple Disk Image (DMG) file provided under releases. This image file
-is not signed.
+There is an Apple Disk Image (DMG) file provided under releases for Apple Silicon
+(M1 and later).
 
 ### Windows
 
