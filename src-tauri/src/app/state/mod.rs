@@ -43,7 +43,7 @@ macro_rules! impl_state {
                     return Ok(None);
                 }
 
-                log::debug!("Reading items from JSON");
+                log::debug!("Reading state from JSON");
                 let state_json = std::fs::read_to_string(&path)?;
                 serde_json::from_str(&state_json).map_err(Into::into)
             }
@@ -61,7 +61,7 @@ macro_rules! impl_state {
                     }
                 }
 
-                log::debug!("Serializing items to JSON");
+                log::debug!("Serializing state to JSON");
                 let state_json = serde_json::to_string_pretty(self)?;
                 std::fs::write(path, state_json)?;
 

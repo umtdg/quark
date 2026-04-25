@@ -5,7 +5,7 @@ pub mod shell;
 pub mod state;
 pub mod tray;
 
-use tauri::{App, Context, Emitter, Manager, Runtime, State, WebviewWindow};
+use tauri::{App, Context, Emitter, Manager, Runtime, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
 use config::AppConfig;
@@ -62,7 +62,7 @@ where
     fn lock(&self) -> Result<()> {
         log::info!("Locking application");
 
-        self.state::<State<'_, ItemState>>().lock()?;
+        self.state::<ItemState>().lock()?;
         self.emit("state-changed", None::<&str>)?;
 
         Ok(())
@@ -87,7 +87,6 @@ pub fn launch_app<R: Runtime>(
 
     let _tray_icon = create_icon(app.handle())?;
 
-    // unwrap is safe since we return Some() from the callback of load_or
     let item_state_path = runtime_state.data_dir.join(ItemState::FILE_NAME);
     let item_state: ItemState = ItemState::load_or_new(item_state_path)?;
 
