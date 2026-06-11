@@ -82,6 +82,7 @@ pub async fn get_vault_items<R: Runtime>(
             "json",
             "--filter-type",
             "login",
+            "--show-secrets",
         ],
     )
     .await?;
