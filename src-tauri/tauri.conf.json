@@ -14,10 +14,13 @@
     "windows": [
       {
         "title": "Quark",
-        "width": 500,
-        "height": 400,
+        "width": 400,
+        "height": 300,
+        "resizable": false,
         "decorations": false,
-        "center": true
+        "alwaysOnTop": true,
+        "center": true,
+        "focus": true
       }
     ],
     "security": {
