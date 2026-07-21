@@ -87,10 +87,13 @@ pub fn run() -> Result<()> {
     let mut app_config = AppConfig::load(config_path)?;
     app_config.merge(&cli);
 
-    let app: App<Wry> = build_app(context, &app_config)?;
+    let mut app: App<Wry> = build_app(context, &app_config)?;
 
     // if we end up here, it means that single instance plugin didn't pick up
     // and this is the first launch of the app
+
+    #[cfg(target_os = "macos")]
+    app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
     cli.run(CommandContext::FirstLaunch {
         app,
