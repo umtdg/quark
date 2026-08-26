@@ -14,8 +14,8 @@
     "windows": [
       {
         "title": "Quark",
-        "width": 400,
-        "height": 300,
+        "width": 500,
+        "height": 375,
         "resizable": false,
         "decorations": false,
         "alwaysOnTop": true,
