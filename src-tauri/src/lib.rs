@@ -39,12 +39,34 @@ fn build_global_shortcut<R: Runtime>(app_config: &AppConfig) -> Result<TauriPlug
 }
 
 fn build_app<R: Runtime>(context: Context<R>, app_config: &AppConfig) -> Result<App<R>> {
-    Builder::<R>::new()
+    let builder = Builder::<R>::new()
         .plugin(build_log(app_config))
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_single_instance::init(on_multiple_instance))
-        .plugin(build_global_shortcut(app_config)?)
+        .plugin(build_global_shortcut(app_config)?);
+
+    #[cfg(target_os = "macos")]
+    let builder = builder.plugin(tauri_nspanel::init()).setup(|app| {
+        use tauri_nspanel::{WebviewWindowExt, panel::NSWindowStyleMask};
+
+        use crate::{app::QuarkAppExt, error::Error};
+
+        log::info!("Converting main window to NSPanel");
+
+        let window = app.get_main_window()?;
+
+        let panel = window
+            .to_panel::<app::panel::MainPanel<R>>()
+            .map_err(|err| Error::Window(err.to_string()))?;
+
+        panel.set_style_mask(NSWindowStyleMask::NonactivatingPanel);
+        panel.set_level(1000); // .screenSaver
+
+        Ok(())
+    });
+
+    builder
         .on_window_event(on_window_event)
         .invoke_handler(tauri::generate_handler![
             copy_primary,

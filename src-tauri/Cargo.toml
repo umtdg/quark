@@ -45,3 +45,5 @@ global-hotkey = { version = "0.7.0", default-features = false, features = ["serd
 [dev-dependencies]
 clippy = "0.0.302"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+tauri-nspanel = { git = "https://github.com/ahkohd/tauri-nspanel", branch = "v2.1" }

@@ -5,6 +5,9 @@ pub mod shell;
 pub mod state;
 pub mod tray;
 
+#[cfg(target_os = "macos")]
+pub mod panel;
+
 use tauri::{App, Context, Emitter, Manager, Runtime, WebviewWindow};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 
@@ -38,6 +41,22 @@ where
         ))
     }
 
+    #[cfg(target_os = "macos")]
+    fn show_window(&self) -> Result<()> {
+        use tauri_nspanel::ManagerExt;
+
+        log::info!("Showing and focusing main window");
+
+        let panel = self
+            .get_webview_panel("main")
+            .map_err(|err| Error::Window(format!("{err:?}")))?;
+
+        panel.make_key_and_order_front();
+
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
     fn show_window(&self) -> Result<()> {
         log::info!("Showing and focusing main window");
 
@@ -51,6 +70,22 @@ where
             .map_err(|err| Error::Window(err.to_string()))
     }
 
+    #[cfg(target_os = "macos")]
+    fn hide_window(&self) -> Result<()> {
+        use tauri_nspanel::ManagerExt;
+
+        log::info!("Hiding window");
+
+        let panel = self
+            .get_webview_panel("main")
+            .map_err(|err| Error::Window(format!("{err:?}")))?;
+
+        panel.hide();
+
+        Ok(())
+    }
+
+    #[cfg(not(target_os = "macos"))]
     fn hide_window(&self) -> Result<()> {
         log::info!("Hiding window");
 
