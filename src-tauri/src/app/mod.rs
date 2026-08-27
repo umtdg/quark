@@ -51,9 +51,9 @@ where
             .get_webview_panel("main")
             .map_err(|err| Error::Window(format!("{err:?}")))?;
 
-        panel.make_key_and_order_front();
-
-        Ok(())
+        self.app_handle()
+            .run_on_main_thread(move || panel.make_key_and_order_front())
+            .map_err(|err| Error::Window(err.to_string()))
     }
 
     #[cfg(not(target_os = "macos"))]
@@ -80,9 +80,9 @@ where
             .get_webview_panel("main")
             .map_err(|err| Error::Window(format!("{err:?}")))?;
 
-        panel.hide();
-
-        Ok(())
+        self.app_handle()
+            .run_on_main_thread(move || panel.hide())
+            .map_err(|err| Error::Window(err.to_string()))
     }
 
     #[cfg(not(target_os = "macos"))]
