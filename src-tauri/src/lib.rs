@@ -48,7 +48,7 @@ fn build_app<R: Runtime>(context: Context<R>, app_config: &AppConfig) -> Result<
 
     #[cfg(target_os = "macos")]
     let builder = builder.plugin(tauri_nspanel::init()).setup(|app| {
-        use tauri_nspanel::{WebviewWindowExt, panel::NSWindowStyleMask};
+        use tauri_nspanel::{CollectionBehavior, PanelLevel, StyleMask, WebviewWindowExt};
 
         use crate::{app::QuarkAppExt, error::Error};
 
@@ -60,8 +60,14 @@ fn build_app<R: Runtime>(context: Context<R>, app_config: &AppConfig) -> Result<
             .to_panel::<app::panel::MainPanel<R>>()
             .map_err(|err| Error::Window(err.to_string()))?;
 
-        panel.set_style_mask(NSWindowStyleMask::NonactivatingPanel);
-        panel.set_level(1000); // .screenSaver
+        panel.set_style_mask(StyleMask::empty().nonactivating_panel().into());
+        panel.set_level(PanelLevel::PopUpMenu.value());
+        panel.set_collection_behavior(
+            CollectionBehavior::new()
+                .full_screen_auxiliary()
+                .can_join_all_spaces()
+                .into(),
+        );
 
         Ok(())
     });
