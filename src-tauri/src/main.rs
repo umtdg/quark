@@ -4,5 +4,8 @@
 use quark_lib::error::Result;
 
 fn main() -> Result<()> {
+    // fix the PATH environment variable
+    let _ = fix_path_env::fix();
+
     quark_lib::run()
 }
